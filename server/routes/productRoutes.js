@@ -37,4 +37,19 @@ router.get('/supplier/:supplierId', async (req, res) => {
   }
 });
 
+
+// READ: Get ALL products for the marketplace (for Buyers)
+router.get('/', async (req, res) => {
+  try {
+    // We use .populate() to get the supplier's name along with the product
+    const products = await Product.find()
+      .populate('supplier', 'name') 
+      .sort({ createdAt: -1 }); // Newest first
+    res.status(200).json(products);
+  } catch (error) {
+    console.error("Error fetching all products:", error);
+    res.status(500).json({ error: "Failed to fetch marketplace products" });
+  }
+});
+
 module.exports = router;
