@@ -3,6 +3,7 @@ const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 const { JWT_SECRET } = require('../middleware/authMiddleware');
 const router = express.Router();
+const bcryptjs = require('bcryptjs');
 
 // REGISTER ROUTE
 router.post('/register', async (req, res) => {
@@ -15,7 +16,7 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ error: "User already exists" });
     }
 
-    // Create user (Note: In a real app, ALWAYS hash the password with bcrypt here!)
+    // Create user (Your User model automatically hashes the password before saving)
     const newUser = new User({ name, email, password, role });
     const savedUser = await newUser.save();
 
@@ -46,8 +47,10 @@ router.post('/login', async (req, res) => {
       return res.status(404).json({ error: "User not found" });
     }
 
-    // Check password (In reality, use bcrypt.compare)
-    if (user.password !== password) {
+    // Use bcryptjs to securely compare the typed password against the stored hash
+    const isMatch = await bcryptjs.compare(password, user.password);
+    
+    if (!isMatch) {
       return res.status(401).json({ error: "Invalid credentials" });
     }
 
