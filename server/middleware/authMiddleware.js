@@ -1,27 +1,31 @@
 const jwt = require('jsonwebtoken');
-const User = require('../models/User');
 
-const protect = async (req, res, next) => {
-  let token;
-  if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
-    try {
-      token = req.headers.authorization.split(' ')[1];
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      req.user = await User.findById(decoded.id).select('-password');
-      next();
-    } catch (error) {
-      res.status(401).json({ message: 'Not authorized, token failed' });
-    }
+// A fallback secret just for local development (in production, use a .env file!)
+const JWT_SECRET = process.env.JWT_SECRET || 'super_secret_textile_key_123';
+
+const verifyToken = (req, res, next) => {
+  // 1. Grab the token from the request headers
+  const authHeader = req.header('Authorization');
+  
+  if (!authHeader) {
+    return res.status(401).json({ error: 'Access denied. No token provided.' });
   }
-  if (!token) res.status(401).json({ message: 'Not authorized, no token' });
-};
 
-const supplierOnly = (req, res, next) => {
-  if (req.user && req.user.role === 'supplier') {
+  try {
+    // 2. Remove the "Bearer " prefix standard in HTTP requests
+    const token = authHeader.replace('Bearer ', '');
+    
+    // 3. Verify the token using our secret key
+    const verified = jwt.verify(token, JWT_SECRET);
+    
+    // 4. Attach the decoded user data to the request so the next function can use it
+    req.user = verified;
+    
+    // 5. Let the request proceed to the actual route!
     next();
-  } else {
-    res.status(403).json({ message: 'Not authorized as a supplier' });
+  } catch (error) {
+    res.status(403).json({ error: 'Invalid or expired token.' });
   }
 };
 
-module.exports = { protect, supplierOnly };
+module.exports = { verifyToken, JWT_SECRET };
