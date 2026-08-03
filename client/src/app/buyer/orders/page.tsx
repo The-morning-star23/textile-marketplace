@@ -29,7 +29,11 @@ export default function BuyerOrders() {
         const buyerId = auth?.user?._id;
         if (!buyerId) return;
 
-        const res = await fetch(`http://localhost:5000/api/orders/buyer/${buyerId}`);
+        const res = await fetch(`http://localhost:5000/api/orders/buyer/${buyerId}`, {
+          headers: {
+            'Authorization': `Bearer ${auth?.token}`,
+          },  
+        });
         if (res.ok) {
           const data = await res.json();
           setOrders(data);

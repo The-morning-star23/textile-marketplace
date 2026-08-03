@@ -56,7 +56,10 @@ export default function ProductCheckout({ params }: { params: Promise<{ id: stri
     try {
       const res = await fetch("http://localhost:5000/api/orders", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${auth?.token}`
+        },
         body: JSON.stringify({
           buyer: auth.user._id,
           supplier: product.supplier._id,

@@ -46,7 +46,7 @@ export default function SupplierProducts() {
     if (auth?.user) {
       loadProducts();
     }
-  }, [auth]); // React Compiler approves of this dependency
+  }, [auth]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,7 +56,10 @@ export default function SupplierProducts() {
       
       const res = await fetch("http://localhost:5000/api/products", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${auth?.token}`
+        },
         body: JSON.stringify({
           ...formData,
           supplier: supplierId,

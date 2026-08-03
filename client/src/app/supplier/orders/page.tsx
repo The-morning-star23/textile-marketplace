@@ -29,7 +29,11 @@ export default function SupplierOrders() {
         const supplierId = auth?.user?._id;
         if (!supplierId) return;
 
-        const res = await fetch(`http://localhost:5000/api/orders/supplier/${supplierId}`);
+        const res = await fetch(`http://localhost:5000/api/orders/supplier/${supplierId}`, {
+          headers: {
+            "Authorization": `Bearer ${auth?.token}`
+          }
+        });
         if (res.ok) {
           const data = await res.json();
           setOrders(data);
@@ -48,7 +52,10 @@ export default function SupplierOrders() {
     try {
       const res = await fetch(`http://localhost:5000/api/orders/${orderId}/status`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${auth?.token}`
+        },
         body: JSON.stringify({ status: newStatus })
       });
 
