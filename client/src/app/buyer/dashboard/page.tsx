@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useEffect } from "react";
 
 interface Product {
@@ -74,9 +75,12 @@ export default function BuyerDashboard() {
                       <div className="font-bold text-lg text-gray-900">${product.price} <span className="text-xs text-gray-500 font-normal">/m</span></div>
                       <div className="text-xs text-gray-500 mt-1">MOQ: {product.moq}m</div>
                     </div>
-                    <button className="bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-indigo-700 transition">
-                      View Details
-                    </button>
+                    <Link 
+                      href={`/buyer/product/${product._id}`} 
+                      className="bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-indigo-700 transition"
+                    >
+                       View Details
+                    </Link>
                   </div>
                 </div>
               </div>

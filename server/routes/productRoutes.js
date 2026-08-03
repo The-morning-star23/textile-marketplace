@@ -41,7 +41,7 @@ router.get('/supplier/:supplierId', async (req, res) => {
 // READ: Get ALL products for the marketplace (for Buyers)
 router.get('/', async (req, res) => {
   try {
-    // We use .populate() to get the supplier's name along with the product
+    // used .populate() to get the supplier's name along with the product
     const products = await Product.find()
       .populate('supplier', 'name') 
       .sort({ createdAt: -1 }); // Newest first
@@ -49,6 +49,18 @@ router.get('/', async (req, res) => {
   } catch (error) {
     console.error("Error fetching all products:", error);
     res.status(500).json({ error: "Failed to fetch marketplace products" });
+  }
+});
+
+// READ: Get a single product by ID (For the checkout page)
+router.get('/:id', async (req, res) => {
+  try {
+    const product = await Product.findById(req.params.id).populate('supplier', 'name');
+    if (!product) return res.status(404).json({ error: "Product not found" });
+    res.status(200).json(product);
+  } catch (error) {
+    console.error("Error fetching product:", error);
+    res.status(500).json({ error: "Failed to fetch product" });
   }
 });
 
