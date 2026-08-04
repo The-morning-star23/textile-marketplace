@@ -26,7 +26,6 @@ export default function SupplierProducts() {
     moq: "",
   });
 
-  // Data fetching logic moved safely inside the effect
   useEffect(() => {
     const loadProducts = async () => {
       try {
@@ -73,8 +72,6 @@ export default function SupplierProducts() {
         const savedProduct = await res.json();
         setShowForm(false);
         setFormData({ title: "", description: "", fabricType: "Cotton", price: "", moq: "" });
-        
-        // Optimistically update the UI without needing a second network request
         setProducts((prevProducts) => [savedProduct, ...prevProducts]);
       }
     } catch (error) {
@@ -88,26 +85,29 @@ export default function SupplierProducts() {
 
   return (
     <div className="max-w-6xl mx-auto">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">My Products</h1>
+      <div className="flex justify-between items-center mb-10">
+        <div>
+          <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight">My Products</h1>
+          <p className="text-slate-500 mt-2 text-lg">Manage your textile inventory and listings.</p>
+        </div>
         <button 
           onClick={() => setShowForm(!showForm)}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition"
+          className="bg-slate-900 text-white px-5 py-2.5 rounded-xl font-bold hover:bg-slate-800 transition shadow-md shadow-slate-900/10"
         >
           {showForm ? "Cancel" : "+ Add New Product"}
         </button>
       </div>
 
       {showForm && (
-        <form onSubmit={handleSubmit} className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 mb-8 space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <form onSubmit={handleSubmit} className="bg-slate-50/80 backdrop-blur-md p-8 rounded-3xl shadow-xl shadow-slate-200/40 border border-slate-200/60 mb-10 space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Product Title</label>
-              <input required type="text" name="title" value={formData.title} onChange={handleChange} className="w-full border p-2 rounded-md" placeholder="e.g. Premium Organic Cotton" />
+              <label className="block text-sm font-semibold text-slate-700 mb-2">Product Title</label>
+              <input required type="text" name="title" value={formData.title} onChange={handleChange} className="w-full border border-slate-200/80 bg-white/60 p-3.5 rounded-xl focus:ring-2 focus:ring-slate-400 outline-none transition-all text-slate-900 shadow-sm" placeholder="e.g. Premium Organic Cotton" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Fabric Type</label>
-              <select name="fabricType" value={formData.fabricType} onChange={handleChange} className="w-full border p-2 rounded-md">
+              <label className="block text-sm font-semibold text-slate-700 mb-2">Fabric Type</label>
+              <select name="fabricType" value={formData.fabricType} onChange={handleChange} className="w-full border border-slate-200/80 bg-white/60 p-3.5 rounded-xl focus:ring-2 focus:ring-slate-400 outline-none transition-all text-slate-900 shadow-sm">
                 <option value="Cotton">Cotton</option>
                 <option value="Silk">Silk</option>
                 <option value="Linen">Linen</option>
@@ -117,19 +117,19 @@ export default function SupplierProducts() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Price per Meter ($)</label>
-              <input required type="number" step="0.01" name="price" value={formData.price} onChange={handleChange} className="w-full border p-2 rounded-md" placeholder="12.50" />
+              <label className="block text-sm font-semibold text-slate-700 mb-2">Price per Meter ($)</label>
+              <input required type="number" step="0.01" name="price" value={formData.price} onChange={handleChange} className="w-full border border-slate-200/80 bg-white/60 p-3.5 rounded-xl focus:ring-2 focus:ring-slate-400 outline-none transition-all text-slate-900 shadow-sm" placeholder="12.50" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Min. Order Quantity (Meters)</label>
-              <input required type="number" name="moq" value={formData.moq} onChange={handleChange} className="w-full border p-2 rounded-md" placeholder="100" />
+              <label className="block text-sm font-semibold text-slate-700 mb-2">Min. Order Quantity (Meters)</label>
+              <input required type="number" name="moq" value={formData.moq} onChange={handleChange} className="w-full border border-slate-200/80 bg-white/60 p-3.5 rounded-xl focus:ring-2 focus:ring-slate-400 outline-none transition-all text-slate-900 shadow-sm" placeholder="100" />
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-            <textarea required name="description" value={formData.description} onChange={handleChange} className="w-full border p-2 rounded-md" rows={3} placeholder="Describe the fabric weave, weight, and best uses..."></textarea>
+            <label className="block text-sm font-semibold text-slate-700 mb-2">Description</label>
+            <textarea required name="description" value={formData.description} onChange={handleChange} className="w-full border border-slate-200/80 bg-white/60 p-3.5 rounded-xl focus:ring-2 focus:ring-slate-400 outline-none transition-all text-slate-900 shadow-sm" rows={3} placeholder="Describe the fabric weave, weight, and best uses..."></textarea>
           </div>
-          <button type="submit" className="w-full bg-green-600 text-white py-2 rounded-lg font-medium hover:bg-green-700 transition">
+          <button type="submit" className="w-full bg-slate-900 text-white py-4 rounded-xl font-bold text-lg hover:bg-slate-800 transition shadow-lg shadow-slate-900/20 mt-4">
             Save Product
           </button>
         </form>
@@ -137,24 +137,24 @@ export default function SupplierProducts() {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {products.length === 0 ? (
-          <div className="col-span-3 text-center py-12 bg-white rounded-xl shadow-sm border border-gray-100 text-gray-500">
+          <div className="col-span-3 text-center py-16 bg-slate-50/80 backdrop-blur-sm rounded-2xl border border-slate-200/60 text-slate-500 shadow-sm">
             You haven&apos;t added any products yet.
           </div>
         ) : (
           products.map((product) => (
-            <div key={product._id} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col">
-              <div className="h-48 bg-gray-200 flex items-center justify-center text-gray-400">
-                [ Image Placeholder ]
+            <div key={product._id} className="bg-slate-50/80 backdrop-blur-sm rounded-2xl border border-slate-200/60 overflow-hidden flex flex-col hover:shadow-xl hover:shadow-slate-200/50 hover:-translate-y-1 hover:border-slate-300/80 transition-all duration-300">
+              <div className="h-48 bg-slate-200/50 flex items-center justify-center text-slate-400 border-b border-slate-200/60">
+                <span className="text-sm font-medium tracking-widest uppercase">[ Image Placeholder ]</span>
               </div>
               <div className="p-5 flex-1 flex flex-col">
-                <div className="flex justify-between items-start mb-2">
-                  <h3 className="font-bold text-lg text-gray-900">{product.title}</h3>
-                  <span className="bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded-full">{product.fabricType}</span>
+                <div className="flex justify-between items-start mb-2 gap-2">
+                  <h3 className="font-bold text-slate-900 truncate">{product.title}</h3>
+                  <span className="bg-slate-200/70 text-slate-700 text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-md whitespace-nowrap">{product.fabricType}</span>
                 </div>
-                <p className="text-gray-500 text-sm line-clamp-2 mb-4 flex-1">{product.description}</p>
-                <div className="flex justify-between items-center border-t pt-4 mt-auto">
-                  <div className="font-bold text-blue-600">${product.price} <span className="text-xs text-gray-500 font-normal">/m</span></div>
-                  <div className="text-sm text-gray-500">MOQ: {product.moq}m</div>
+                <p className="text-sm text-slate-600 line-clamp-2 mb-6 flex-1 leading-relaxed">{product.description}</p>
+                <div className="flex justify-between items-center pt-4 border-t border-slate-200/60 mt-auto">
+                  <div className="font-extrabold text-lg text-slate-900">${product.price} <span className="text-xs text-slate-500 font-medium">/m</span></div>
+                  <div className="text-xs text-slate-500 font-medium bg-white/50 px-2 py-1 rounded-md border border-slate-200/50">MOQ: {product.moq}m</div>
                 </div>
               </div>
             </div>

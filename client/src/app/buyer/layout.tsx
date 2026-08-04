@@ -2,12 +2,13 @@
 
 import { useContext, useEffect } from "react";
 import { AuthContext } from "../../context/AuthContext";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 
 export default function BuyerLayout({ children }: { children: React.ReactNode }) {
   const auth = useContext(AuthContext);
   const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
     if (!auth?.user) {
@@ -22,35 +23,80 @@ export default function BuyerLayout({ children }: { children: React.ReactNode })
   }
 
   return (
-    <div className="flex h-screen bg-gray-50">
-      {/* Sidebar Navigation */}
-      <aside className="w-64 bg-indigo-950 text-white flex flex-col shadow-xl">
-        <div className="p-6 text-xl font-bold border-b border-indigo-900">
-          Buyer Panel
+    // MAIN WRAPPER: Changed to a soft slate-100 background with dark slate-900 text
+    <div className="flex h-screen bg-indigo-100 selection:bg-indigo-4ss00 selection:text-white font-sans overflow-hidden text-slate-900">
+      
+      {/* Subtle Background Grid for the light main area */}
+      <div className="absolute inset-0 z-0 pointer-events-none bg-[linear-gradient(to_right,#cbd5e1_1px,transparent_1px),linear-gradient(to_bottom,#cbd5e1_1px,transparent_1px)] bg-size-[4rem_4rem] opacity-30"></div>
+
+      {/* Premium Dark Sidebar */}
+      <aside className="w-72 bg-slate-950 flex flex-col shadow-2xl relative z-20 border-r border-slate-800">
+        
+        {/* Header / Logo */}
+        <div className="h-20 flex items-center px-8 border-b border-white/10">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-indigo-400 rounded-lg flex items-center justify-center shadow-lg shadow-indigo-500/30">
+              <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1v2.5M14 4l-2-1-2 1M4 7l2-1M4 7l2 1M4 7v2.5M12 21l-2-1m2 1l2-1m-2 1v-2.5M6 18l-2-1v-2.5M18 18l2-1v-2.5" />
+              </svg>
+            </div>
+            <span className="font-extrabold text-xl text-white tracking-tight">Buyer Panel</span>
+          </div>
         </div>
         
-        <nav className="flex-1 p-4 space-y-2">
-          <Link href="/buyer/dashboard" className="block p-3 rounded-lg bg-indigo-600 text-white font-medium">
+        {/* Navigation */}
+        <nav className="flex-1 p-6 space-y-3">
+          <Link 
+            href="/buyer/dashboard" 
+            className={`flex items-center gap-3 px-4 py-3.5 rounded-xl transition font-medium ${
+              pathname === "/buyer/dashboard" 
+                ? "bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 shadow-sm" 
+                : "text-slate-400 hover:text-white hover:bg-white/5 border border-transparent"
+            }`}
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" /></svg>
             Marketplace
           </Link>
-          <Link href="/buyer/orders" className="block p-3 rounded-lg hover:bg-indigo-900 text-indigo-200 transition">
+
+          <Link 
+            href="/buyer/orders" 
+            className={`flex items-center gap-3 px-4 py-3.5 rounded-xl transition font-medium ${
+              pathname === "/buyer/orders" 
+                ? "bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 shadow-sm" 
+                : "text-slate-400 hover:text-white hover:bg-white/5 border border-transparent"
+            }`}
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
             My Orders
           </Link>
         </nav>
 
-        <div className="p-4 border-t border-indigo-900">
+        {/* Profile & Logout Section */}
+        <div className="p-6 border-t border-white/10 bg-white/2">
+          <div className="flex items-center gap-3 mb-6 px-2">
+            <div className="w-10 h-10 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-300 font-bold uppercase shrink-0">
+              {auth.user.name ? auth.user.name.charAt(0) : "B"}
+            </div>
+            <div className="flex-col hidden sm:flex overflow-hidden">
+              <span className="text-sm font-semibold text-white truncate">{auth.user.name}</span>
+              <span className="text-xs text-slate-500 truncate">{auth.user.email}</span>
+            </div>
+          </div>
           <button 
             onClick={auth.logout} 
-            className="w-full text-left p-3 text-red-400 hover:bg-indigo-900 rounded-lg transition"
+            className="w-full flex items-center justify-center gap-2 px-4 py-3.5 text-sm font-semibold text-red-400 bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 rounded-xl transition"
           >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
             Logout
           </button>
         </div>
       </aside>
 
       {/* Main Content Area */}
-      <main className="flex-1 overflow-y-auto p-8">
-        {children}
+      <main className="flex-1 overflow-y-auto relative z-10">
+        <div className="p-8 md:p-12 max-w-7xl mx-auto">
+          {children}
+        </div>
       </main>
     </div>
   );
