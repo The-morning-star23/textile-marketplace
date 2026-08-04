@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
 import { createContext, useState, useEffect, ReactNode } from "react";
@@ -13,6 +14,7 @@ interface User {
 interface AuthContextType {
   user: User | null;
   token: string | null;
+  isLoading: boolean; // <-- Added this
   login: (userData: User, authToken: string) => void;
   logout: () => void;
 }
@@ -22,6 +24,7 @@ export const AuthContext = createContext<AuthContextType | null>(null);
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true); // <-- Starts as true
   const router = useRouter();
 
   useEffect(() => {
@@ -29,11 +32,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const storedToken = localStorage.getItem("token");
     
     if (storedUser && storedToken) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setUser(JSON.parse(storedUser));
-       
       setToken(storedToken);
     }
+    
+    // We are done checking localStorage, so loading is complete!
+    setIsLoading(false); 
   }, []);
 
   const login = (userData: User, authToken: string) => {
@@ -59,7 +63,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, login, logout }}>
+    <AuthContext.Provider value={{ user, token, isLoading, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

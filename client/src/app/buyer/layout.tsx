@@ -11,6 +11,8 @@ export default function BuyerLayout({ children }: { children: React.ReactNode })
   const pathname = usePathname();
 
   useEffect(() => {
+    if (auth?.isLoading) return;
+
     if (!auth?.user) {
       router.push("/login");
     } else if (auth.user.role !== "buyer") {
@@ -18,13 +20,28 @@ export default function BuyerLayout({ children }: { children: React.ReactNode })
     }
   }, [auth, router]);
 
+  if (auth?.isLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-indigo-100">
+        <div className="animate-pulse text-indigo-600 font-bold text-xl flex items-center gap-2">
+          <svg className="w-6 h-6 animate-spin" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          Loading workspace...
+        </div>
+      </div>
+    );
+  }
+
+  // If we finished loading and there STILL isn't a valid buyer, show nothing (it will redirect)
   if (!auth?.user || auth.user.role !== "buyer") {
     return null; 
   }
 
   return (
-    // MAIN WRAPPER: Changed to a soft slate-100 background with dark slate-900 text
-    <div className="flex h-screen bg-indigo-100 selection:bg-indigo-4ss00 selection:text-white font-sans overflow-hidden text-slate-900">
+    // MAIN WRAPPER
+    <div className="flex h-screen bg-indigo-100 selection:bg-indigo-400 selection:text-white font-sans overflow-hidden text-slate-900">
       
       {/* Subtle Background Grid for the light main area */}
       <div className="absolute inset-0 z-0 pointer-events-none bg-[linear-gradient(to_right,#cbd5e1_1px,transparent_1px),linear-gradient(to_bottom,#cbd5e1_1px,transparent_1px)] bg-size-[4rem_4rem] opacity-30"></div>
