@@ -3,13 +3,21 @@ const Product = require('../models/Product');
 const { verifyToken } = require('../middleware/authMiddleware');
 const router = express.Router();
 
-// CREATE: Add a new product (PROTECTED - Notice the verifyToken middleman!)
+// CREATE: Add a new product (PROTECTED)
 router.post('/', verifyToken, async (req, res) => {
   try {
-    const { title, description, fabricType, price, moq, supplier } = req.body;
+    const { title, description, fabricType, price, moq, supplier, images } = req.body; 
+    
     const newProduct = new Product({
-      title, description, fabricType, price, moq, supplier
+      title, 
+      description, 
+      fabricType, 
+      price, 
+      moq, 
+      supplier,
+      images: images || []
     });
+    
     const savedProduct = await newProduct.save();
     res.status(201).json(savedProduct);
   } catch (error) {

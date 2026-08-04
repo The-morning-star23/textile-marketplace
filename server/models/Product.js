@@ -33,7 +33,7 @@ const productSchema = new mongoose.Schema({
   },
   images: [{ 
     type: String 
-  }] // We will store image URLs here later
+  }] 
 }, { timestamps: true });
 
 module.exports = mongoose.model('Product', productSchema);

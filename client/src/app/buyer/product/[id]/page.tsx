@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import { useState, useEffect, useContext, use } from "react";
@@ -12,6 +13,7 @@ interface Product {
   fabricType: string;
   price: number;
   moq: number;
+  images: string[]; // <-- Added the images array!
   supplier: {
     _id: string;
     name: string;
@@ -19,7 +21,6 @@ interface Product {
 }
 
 export default function ProductCheckout({ params }: { params: Promise<{ id: string }> }) {
-  // Unwrap the dynamic URL parameter in Next.js 16+
   const resolvedParams = use(params);
   const productId = resolvedParams.id;
   
@@ -38,7 +39,7 @@ export default function ProductCheckout({ params }: { params: Promise<{ id: stri
         if (res.ok) {
           const data = await res.json();
           setProduct(data);
-          setQuantity(data.moq); // Default the quantity to the Minimum Order Quantity
+          setQuantity(data.moq);
         }
       } catch (error) {
         console.error("Failed to load product:", error);
@@ -71,7 +72,6 @@ export default function ProductCheckout({ params }: { params: Promise<{ id: stri
       });
 
       if (res.ok) {
-        // Order successful! Send them to their order history
         router.push("/buyer/orders");
       }
     } catch (error) {
@@ -95,21 +95,35 @@ export default function ProductCheckout({ params }: { params: Promise<{ id: stri
       <div className="bg-slate-50/80 backdrop-blur-md rounded-3xl shadow-xl shadow-slate-200/40 border border-slate-200/60 overflow-hidden flex flex-col md:flex-row">
         
         {/* Left side: Product Info */}
-        <div className="md:w-1/2 bg-slate-100/40 p-8 md:p-12 border-b md:border-b-0 md:border-r border-slate-200/60 flex flex-col justify-center">
-          <span className="bg-slate-200/80 text-slate-700 text-xs px-3 py-1.5 rounded-md font-bold uppercase tracking-wider w-max">
-            {product.fabricType}
-          </span>
+        <div className="md:w-1/2 bg-slate-100/40 p-8 md:p-12 border-b md:border-b-0 md:border-r border-slate-200/60 flex flex-col">
           
-          <h1 className="text-4xl font-extrabold text-slate-900 mt-5 mb-2 tracking-tight leading-tight">{product.title}</h1>
-          <p className="text-slate-500 font-medium mb-8">Supplied by {product.supplier.name}</p>
-          
-          <div className="text-5xl font-extrabold text-slate-900 mb-8">
-            ${product.price} <span className="text-xl text-slate-500 font-medium">/ meter</span>
-          </div>
-          
-          <div className="prose prose-sm text-slate-600">
-            <h3 className="text-slate-900 font-bold mb-2">Description</h3>
-            <p className="leading-relaxed">{product.description}</p>
+          {/* New Image Feature! */}
+          {product.images && product.images.length > 0 && (
+            <div className="w-full h-64 md:h-72 mb-8 rounded-2xl overflow-hidden border border-slate-200/60 shadow-inner">
+              <img 
+                src={product.images[0]} 
+                alt={product.title} 
+                className="w-full h-full object-cover hover:scale-105 transition-transform duration-500" 
+              />
+            </div>
+          )}
+
+          <div>
+            <span className="bg-slate-200/80 text-slate-700 text-xs px-3 py-1.5 rounded-md font-bold uppercase tracking-wider w-max">
+              {product.fabricType}
+            </span>
+            
+            <h1 className="text-4xl font-extrabold text-slate-900 mt-5 mb-2 tracking-tight leading-tight">{product.title}</h1>
+            <p className="text-slate-500 font-medium mb-8">Supplied by {product.supplier.name}</p>
+            
+            <div className="text-5xl font-extrabold text-slate-900 mb-8">
+              ${product.price} <span className="text-xl text-slate-500 font-medium">/ meter</span>
+            </div>
+            
+            <div className="prose prose-sm text-slate-600">
+              <h3 className="text-slate-900 font-bold mb-2">Description</h3>
+              <p className="leading-relaxed">{product.description}</p>
+            </div>
           </div>
         </div>
 

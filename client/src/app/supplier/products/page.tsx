@@ -10,6 +10,7 @@ interface Product {
   fabricType: string;
   price: number;
   moq: number;
+  images: string[];
 }
 
 export default function SupplierProducts() {
@@ -17,6 +18,8 @@ export default function SupplierProducts() {
   
   const [products, setProducts] = useState<Product[]>([]);
   const [showForm, setShowForm] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [imageFile, setImageFile] = useState<File | null>(null);
   
   const [formData, setFormData] = useState({
     title: "",
@@ -51,20 +54,45 @@ export default function SupplierProducts() {
     e.preventDefault();
     try {
       const supplierId = auth?.user?._id;
-      if (!supplierId) return;
+      if (!supplierId || !auth?.token) return;
       
+      setUploading(true);
+      let uploadedImageUrl = "";
+
+      // 1. Upload the image first if one was selected
+      if (imageFile) {
+        const imageFormData = new FormData();
+        imageFormData.append("image", imageFile);
+
+        const uploadRes = await fetch("http://localhost:5000/api/upload", {
+          method: "POST",
+          headers: { 
+            "Authorization": `Bearer ${auth.token}` 
+          },
+          body: imageFormData,
+        });
+
+        if (uploadRes.ok) {
+          const uploadData = await uploadRes.json();
+          uploadedImageUrl = uploadData.imageUrl;
+        } else {
+          console.error("Failed to upload image to server");
+        }
+      }
+
+      // 2. Create the product with the new image URL
       const res = await fetch("http://localhost:5000/api/products", {
         method: "POST",
         headers: { 
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${auth?.token}`
+          "Authorization": `Bearer ${auth.token}`
         },
         body: JSON.stringify({
           ...formData,
           supplier: supplierId,
           price: Number(formData.price),
           moq: Number(formData.moq),
-          images: [],
+          images: uploadedImageUrl ? [uploadedImageUrl] : [], // Attach the Cloudinary URL!
         }),
       });
 
@@ -72,15 +100,24 @@ export default function SupplierProducts() {
         const savedProduct = await res.json();
         setShowForm(false);
         setFormData({ title: "", description: "", fabricType: "Cotton", price: "", moq: "" });
+        setImageFile(null);
         setProducts((prevProducts) => [savedProduct, ...prevProducts]);
       }
     } catch (error) {
       console.error("Error creating product:", error);
+    } finally {
+      setUploading(false);
     }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setImageFile(e.target.files[0]);
+    }
   };
 
   return (
@@ -100,6 +137,18 @@ export default function SupplierProducts() {
 
       {showForm && (
         <form onSubmit={handleSubmit} className="bg-slate-50/80 backdrop-blur-md p-8 rounded-3xl shadow-xl shadow-slate-200/40 border border-slate-200/60 mb-10 space-y-6">
+          
+          {/* New Image Upload Field */}
+          <div>
+            <label className="block text-sm font-semibold text-slate-700 mb-2">Product Image</label>
+            <input 
+              type="file" 
+              accept="image/*"
+              onChange={handleImageChange}
+              className="w-full border border-slate-200/80 bg-white/60 p-2.5 rounded-xl text-slate-700 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-slate-900 file:text-white hover:file:bg-slate-800 transition-all cursor-pointer" 
+            />
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-semibold text-slate-700 mb-2">Product Title</label>
@@ -129,8 +178,13 @@ export default function SupplierProducts() {
             <label className="block text-sm font-semibold text-slate-700 mb-2">Description</label>
             <textarea required name="description" value={formData.description} onChange={handleChange} className="w-full border border-slate-200/80 bg-white/60 p-3.5 rounded-xl focus:ring-2 focus:ring-slate-400 outline-none transition-all text-slate-900 shadow-sm" rows={3} placeholder="Describe the fabric weave, weight, and best uses..."></textarea>
           </div>
-          <button type="submit" className="w-full bg-slate-900 text-white py-4 rounded-xl font-bold text-lg hover:bg-slate-800 transition shadow-lg shadow-slate-900/20 mt-4">
-            Save Product
+          
+          <button 
+            type="submit" 
+            disabled={uploading}
+            className="w-full bg-slate-900 text-white py-4 rounded-xl font-bold text-lg hover:bg-slate-800 transition shadow-lg shadow-slate-900/20 mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {uploading ? "Uploading & Saving..." : "Save Product"}
           </button>
         </form>
       )}
@@ -143,9 +197,17 @@ export default function SupplierProducts() {
         ) : (
           products.map((product) => (
             <div key={product._id} className="bg-slate-50/80 backdrop-blur-sm rounded-2xl border border-slate-200/60 overflow-hidden flex flex-col hover:shadow-xl hover:shadow-slate-200/50 hover:-translate-y-1 hover:border-slate-300/80 transition-all duration-300">
-              <div className="h-48 bg-slate-200/50 flex items-center justify-center text-slate-400 border-b border-slate-200/60">
-                <span className="text-sm font-medium tracking-widest uppercase">[ Image Placeholder ]</span>
+              
+              {/* Dynamic Image Rendering */}
+              <div className="h-48 bg-slate-200/50 flex items-center justify-center text-slate-400 border-b border-slate-200/60 overflow-hidden">
+                {product.images && product.images.length > 0 ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={product.images[0]} alt={product.title} className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-sm font-medium tracking-widest uppercase">[ No Image ]</span>
+                )}
               </div>
+              
               <div className="p-5 flex-1 flex flex-col">
                 <div className="flex justify-between items-start mb-2 gap-2">
                   <h3 className="font-bold text-slate-900 truncate">{product.title}</h3>

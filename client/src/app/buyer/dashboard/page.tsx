@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import Link from "next/link";
@@ -10,6 +11,7 @@ interface Product {
   fabricType: string;
   price: number;
   moq: number;
+  images: string[]; // <-- Added images array
   supplier?: {
     name: string;
   };
@@ -58,16 +60,19 @@ export default function BuyerDashboard() {
                 key={product._id} 
                 className="bg-slate-50/80 backdrop-blur-sm rounded-2xl border border-slate-200/60 overflow-hidden flex flex-col hover:shadow-xl hover:shadow-slate-200/50 hover:-translate-y-1 hover:border-slate-300/80 transition-all duration-300"
               >
-                {/* Image Area */}
-                <div className="h-48 bg-slate-200/50 flex items-center justify-center text-slate-400 border-b border-slate-200/60">
-                  <span className="text-sm font-medium tracking-widest uppercase">[ Image Placeholder ]</span>
+                {/* Dynamic Image Area */}
+                <div className="h-48 bg-slate-200/50 flex items-center justify-center text-slate-400 border-b border-slate-200/60 overflow-hidden">
+                  {product.images && product.images.length > 0 ? (
+                    <img src={product.images[0]} alt={product.title} className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-sm font-medium tracking-widest uppercase">[ No Image ]</span>
+                  )}
                 </div>
                 
                 {/* Card Content Area */}
                 <div className="p-5 flex-1 flex flex-col">
                   <div className="flex justify-between items-start mb-1 gap-2">
                     <h3 className="font-bold text-slate-900 truncate">{product.title}</h3>
-                    {/* Neutral, elegant badge */}
                     <span className="bg-slate-200/70 text-slate-700 text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-md whitespace-nowrap">
                       {product.fabricType}
                     </span>

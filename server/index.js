@@ -19,6 +19,7 @@ connectDB();
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);
+app.use('/api/upload', require('./routes/uploadRoutes'));
 
 app.get('/', (req, res) => res.send('Marketplace API is running...'));
 
