@@ -1,6 +1,43 @@
+/* eslint-disable @next/next/no-img-element */
+"use client";
+
 import Link from "next/link";
+import { useState, useEffect } from "react";
+
+interface Product {
+  _id: string;
+  title: string;
+  fabricType: string;
+  price: number;
+  images: string[];
+  supplier?: {
+    name: string;
+  };
+}
 
 export default function Home() {
+  const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchFeatured = async () => {
+      try {
+        const res = await fetch("http://localhost:5000/api/products");
+        if (res.ok) {
+          const data = await res.json();
+          // Grab only the newest 3 products for the landing page showcase
+          setFeaturedProducts(data.slice(0, 3));
+        }
+      } catch (error) {
+        console.error("Failed to fetch featured products:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchFeatured();
+  }, []);
+
   return (
     <div className="min-h-screen bg-slate-950 selection:bg-indigo-500 selection:text-white flex flex-col relative overflow-hidden text-slate-200">
       
@@ -35,7 +72,7 @@ export default function Home() {
 
       {/* Hero Section */}
       <main className="flex-1 max-w-7xl mx-auto px-6 pt-24 pb-20 w-full relative z-10">
-        <div className="text-center max-w-4xl mx-auto mb-16">
+        <div className="text-center max-w-4xl mx-auto mb-20">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-slate-300 text-sm font-semibold mb-8 backdrop-blur-md">
             <span className="flex h-2 w-2 rounded-full bg-indigo-400 animate-pulse shadow-[0_0_10px_rgba(129,140,248,0.8)]"></span>
             Marketplace v1.0 is now live
@@ -60,30 +97,61 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Dashboard Preview Mockup (Dark Mode) */}
-        <div className="relative mx-auto max-w-5xl mt-20">
-          <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-2xl p-2 shadow-2xl shadow-indigo-500/10">
-            <div className="rounded-xl border border-white/5 bg-slate-950/80 overflow-hidden shadow-sm">
-              {/* Fake Window Header */}
-              <div className="h-12 bg-white/5 border-b border-white/5 flex items-center px-4 gap-2">
-                <div className="w-3 h-3 rounded-full bg-red-500/80"></div>
-                <div className="w-3 h-3 rounded-full bg-yellow-500/80"></div>
-                <div className="w-3 h-3 rounded-full bg-green-500/80"></div>
-              </div>
-              {/* Fake Content Grid */}
-              <div className="p-8 grid grid-cols-1 md:grid-cols-3 gap-6 opacity-60 pointer-events-none">
-                <div className="col-span-2 space-y-4">
-                  <div className="h-8 w-48 bg-white/10 rounded-lg"></div>
-                  <div className="h-64 bg-white/5 rounded-xl border border-white/5"></div>
-                </div>
-                <div className="space-y-4">
-                  <div className="h-24 bg-white/5 rounded-xl border border-white/5"></div>
-                  <div className="h-24 bg-white/5 rounded-xl border border-white/5"></div>
-                  <div className="h-24 bg-white/5 rounded-xl border border-white/5"></div>
-                </div>
+        {/* Live Featured Products Grid */}
+        <div className="relative mx-auto max-w-5xl mt-12">
+          <h2 className="text-center text-sm font-bold uppercase tracking-widest text-slate-500 mb-8">
+            Featured Marketplace Additions
+          </h2>
+          
+          {loading ? (
+            <div className="flex justify-center items-center py-12">
+              <div className="animate-pulse flex gap-2 items-center text-indigo-400">
+                <div className="w-2 h-2 bg-indigo-500 rounded-full"></div>
+                <div className="w-2 h-2 bg-indigo-500 rounded-full animation-delay-200"></div>
+                <div className="w-2 h-2 bg-indigo-500 rounded-full animation-delay-400"></div>
               </div>
             </div>
-          </div>
+          ) : featuredProducts.length === 0 ? (
+            <div className="text-center py-12 border border-white/10 rounded-2xl bg-white/5 backdrop-blur-sm text-slate-400">
+              New products arriving soon.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {featuredProducts.map((product) => (
+                <div 
+                  key={product._id} 
+                  className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl overflow-hidden hover:border-indigo-500/50 hover:shadow-[0_0_30px_rgba(79,70,229,0.15)] hover:-translate-y-1 transition-all duration-300 group"
+                >
+                  <div className="h-48 bg-slate-900 border-b border-white/10 overflow-hidden relative">
+                    {product.images && product.images.length > 0 ? (
+                      <img 
+                        src={product.images[0]} 
+                        alt={product.title} 
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" 
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-slate-600 text-xs font-bold tracking-widest uppercase">
+                        [ No Image ]
+                      </div>
+                    )}
+                    <div className="absolute top-3 right-3 bg-slate-950/80 backdrop-blur-md border border-white/10 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg">
+                      ${product.price}/m
+                    </div>
+                  </div>
+                  <div className="p-5">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-400 mb-2 block">
+                      {product.fabricType}
+                    </span>
+                    <h3 className="font-bold text-white text-lg truncate mb-1">{product.title}</h3>
+                    <p className="text-sm text-slate-400 mb-4">By {product.supplier?.name || "Verified Mill"}</p>
+                    <Link href="/login" className="w-full block text-center bg-white/5 hover:bg-indigo-600 border border-white/10 hover:border-indigo-500 text-white py-2 rounded-lg text-sm font-semibold transition-all">
+                      Log in to view details
+                    </Link>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </main>
 
@@ -97,7 +165,7 @@ export default function Home() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Feature 1 */}
-            <div className="col-span-1 md:col-span-2 bg-white/3 p-8 rounded-3xl border border-white/10 backdrop-blur-xl hover:border-indigo-500/50 transition duration-500 relative overflow-hidden group">
+            <div className="col-span-1 md:col-span-2 bg-white/5 p-8 rounded-3xl border border-white/10 backdrop-blur-xl hover:border-indigo-500/50 transition duration-500 relative overflow-hidden group">
               <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/20 rounded-full blur-3xl -mr-20 -mt-20 transition-all group-hover:bg-indigo-500/30"></div>
               <div className="w-12 h-12 bg-white/10 rounded-2xl border border-white/10 flex items-center justify-center mb-6 shadow-inner">
                 <svg className="w-6 h-6 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -109,7 +177,7 @@ export default function Home() {
             </div>
 
             {/* Feature 2 */}
-            <div className="col-span-1 bg-white/3 p-8 rounded-3xl border border-white/10 backdrop-blur-xl hover:border-blue-500/50 transition duration-500">
+            <div className="col-span-1 bg-white/5 p-8 rounded-3xl border border-white/10 backdrop-blur-xl hover:border-blue-500/50 transition duration-500">
               <div className="w-12 h-12 bg-white/10 rounded-2xl border border-white/10 flex items-center justify-center mb-6 shadow-inner">
                 <svg className="w-6 h-6 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
