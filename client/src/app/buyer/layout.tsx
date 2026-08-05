@@ -2,12 +2,14 @@
 
 import { useContext, useEffect } from "react";
 import { AuthContext } from "../../context/AuthContext";
+import { CartContext } from "../../context/CartContext";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import AIAssistant from "../../components/AIAssistant";
 
 export default function BuyerLayout({ children }: { children: React.ReactNode }) {
   const auth = useContext(AuthContext);
+  const cartContext = useContext(CartContext);
   const router = useRouter();
   const pathname = usePathname();
 
@@ -77,6 +79,25 @@ export default function BuyerLayout({ children }: { children: React.ReactNode })
           </Link>
 
           <Link 
+            href="/buyer/cart" 
+            className={`flex items-center justify-between px-4 py-3.5 rounded-xl transition font-medium ${
+              pathname === "/buyer/cart" 
+                ? "bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 shadow-sm" 
+                : "text-slate-400 hover:text-white hover:bg-white/5 border border-transparent"
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+              My Cart
+            </div>
+            {cartContext && cartContext.itemCount > 0 && (
+              <span className="bg-indigo-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                {cartContext.itemCount}
+              </span>
+            )}
+          </Link>
+
+          <Link 
             href="/buyer/orders" 
             className={`flex items-center gap-3 px-4 py-3.5 rounded-xl transition font-medium ${
               pathname === "/buyer/orders" 
@@ -87,9 +108,21 @@ export default function BuyerLayout({ children }: { children: React.ReactNode })
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
             My Orders
           </Link>
+
+          <Link 
+            href="/buyer/profile" 
+            className={`flex items-center gap-3 px-4 py-3.5 rounded-xl transition font-medium ${
+              pathname === "/buyer/profile" 
+                ? "bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 shadow-sm" 
+                : "text-slate-400 hover:text-white hover:bg-white/5 border border-transparent"
+            }`}
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+            My Profile
+          </Link>
         </nav>
 
-        {/* Profile & Logout Section */}
+        {/* Profile Mini-Card (Bottom) & Logout Section */}
         <div className="p-6 border-t border-white/10 bg-white/2">
           <div className="flex items-center gap-3 mb-6 px-2">
             <div className="w-10 h-10 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-300 font-bold uppercase shrink-0">
