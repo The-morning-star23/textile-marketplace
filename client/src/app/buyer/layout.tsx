@@ -4,6 +4,7 @@ import { useContext, useEffect } from "react";
 import { AuthContext } from "../../context/AuthContext";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
+import AIAssistant from "../../components/AIAssistant";
 
 export default function BuyerLayout({ children }: { children: React.ReactNode }) {
   const auth = useContext(AuthContext);
@@ -115,6 +116,7 @@ export default function BuyerLayout({ children }: { children: React.ReactNode })
           {children}
         </div>
       </main>
+      <AIAssistant />
     </div>
   );
 }

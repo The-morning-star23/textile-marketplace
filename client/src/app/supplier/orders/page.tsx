@@ -119,7 +119,7 @@ export default function SupplierOrders() {
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-slate-200/80 pb-4 mb-4 gap-4">
                 <div>
                   <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Order #{order._id.slice(-8)}</p>
-                  <p className="text-sm text-slate-500 font-medium">{new Date(order.createdAt).toLocaleDateString()} at {new Date(order.createdAt).toLocaleTimeString()}</p>
+                  <p className="text-sm text-slate-500 font-medium">{new Date(order.createdAt).toLocaleDateString()}  {new Date(order.createdAt).toLocaleTimeString()}</p>
                 </div>
                 
                 {/* Status Update Control */}
