@@ -160,7 +160,7 @@ export default function BuyerDashboard() {
                       <div className="text-xs text-slate-500 font-medium mt-0.5">MOQ: {product.moq}m</div>
                     </div>
                     <Link 
-                      href={`/buyer/product/${product._id}`} 
+                      href={`/product/${product._id}`} 
                       className="bg-slate-900 text-white px-4 py-2 rounded-xl text-sm font-semibold hover:bg-slate-800 transition-colors shadow-md shadow-slate-900/10"
                     >
                        View Details
