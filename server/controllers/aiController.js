@@ -6,7 +6,8 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 const generateAIResponse = async (req, res) => {
   try {
-    const { message } = req.body;
+    // Extract history and message from the request body
+    const { message, history = [] } = req.body;
 
     if (!message) {
       return res.status(400).json({ message: "Please provide a message for the AI." });
@@ -25,8 +26,8 @@ const generateAIResponse = async (req, res) => {
        ---`
     ).join("\n");
 
-    // 3. Build the master prompt (System Instructions + Context + User Message)
-    const prompt = `
+    // 3. Build the System Instructions (Rules and Context)
+    const systemInstruction = `
       You are the official AI Shopping Assistant for "ThreadMarket", a premium B2B textile marketplace.
       Your job is to help buyers find fabrics, compare products, answer questions, and make recommendations.
       
@@ -38,15 +39,33 @@ const generateAIResponse = async (req, res) => {
       2. If a user asks for something we don't have, politely apologize and suggest the closest alternative we DO have.
       3. Keep your answers concise, friendly, and formatted nicely. Do not use complex formatting, just standard text and simple lists if needed.
       4. If the user asks to compare, compare the prices, types, and descriptions of the available products.
-
-      User's Message: "${message}"
-      
-      Your Helpful Response:
     `;
 
-    // 4. Call the Gemini 1.5 Flash model
-    const model = genAI.getGenerativeModel({ model: "gemini-3.5-flash" });
-    const result = await model.generateContent(prompt);
+    // 4. Format the frontend history for Gemini
+    // Gemini expects 'user' and 'model' as roles (our frontend uses 'ai').
+    let formattedHistory = history.map(msg => ({
+      role: msg.role === "ai" ? "model" : "user",
+      parts: [{ text: msg.text }]
+    }));
+
+    // FIX: Gemini strictly requires history to start with a 'user' message.
+    // We must remove any leading 'model' messages (like the initial frontend greeting).
+    while (formattedHistory.length > 0 && formattedHistory[0].role === "model") {
+      formattedHistory.shift();
+    }
+
+    // 5. Initialize the model 
+    const model = genAI.getGenerativeModel({ 
+      model: "gemini-3.5-flash", // Corrected to the actual active model version
+      systemInstruction: systemInstruction 
+    });
+
+    // 6. Start the chat with history and send the new message
+    const chat = model.startChat({
+      history: formattedHistory,
+    });
+
+    const result = await chat.sendMessage(message);
     const response = await result.response;
     const text = response.text();
 
