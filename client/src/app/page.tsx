@@ -3,7 +3,8 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
+import { AuthContext } from "../context/AuthContext";
 
 interface Product {
   _id: string;
@@ -20,6 +21,11 @@ const CATEGORIES = ["All", "Cotton", "Silk", "Linen", "Polyester", "Wool", "Blen
 
 export default function Home() {
   const router = useRouter();
+  
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const auth = useContext(AuthContext) as any;
+  const user = auth?.user;
+
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   
@@ -63,7 +69,7 @@ export default function Home() {
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#6366f111_1px,transparent_1px),linear-gradient(to_bottom,#6366f111_1px,transparent_1px)] bg-size-[4rem_4rem]"></div>
       </div>
 
-      {/* THE PUBLIC HEADER (Same everywhere for unauthenticated users) */}
+      {/* THE PUBLIC HEADER */}
       <nav className="sticky top-0 z-50 w-full backdrop-blur-2xl bg-[#0B1120]/60 border-b border-indigo-500/20">
         <div className="max-w-7xl mx-auto px-6 h-20 flex justify-between items-center gap-6">
           
@@ -110,14 +116,52 @@ export default function Home() {
             </button>
           </form>
 
-          {/* Public Auth Links */}
-          <div className="flex items-center gap-4 lg:gap-6 shrink-0">
-            <Link href="/login" className="text-sm font-semibold text-indigo-200 hover:text-cyan-100 transition">
-              Log in
-            </Link>
-            <Link href="/register" className="text-sm font-semibold bg-linear-to-r from-cyan-500 to-indigo-500 text-cyan-50 px-5 py-2.5 rounded-xl hover:shadow-[0_0_20px_rgba(34,211,238,0.4)] hover:scale-105 transition-all duration-300">
-              Sign Up
-            </Link>
+          {/* Navigation Buttons */}
+          <div className="flex items-center gap-4 shrink-0">
+            {user ? (
+              // SHOW IF LOGGED IN
+              <>
+                <Link 
+                  href="/buyer/dashboard"
+                  className="hidden sm:flex items-center gap-2 px-4 py-2 bg-indigo-900/40 border border-indigo-500/30 rounded-xl text-indigo-200 hover:text-cyan-400 hover:border-cyan-400/50 transition-all group text-sm font-bold"
+                >
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                  </svg>
+                  Dashboard
+                </Link>
+                
+                <Link 
+                  href="/buyer/cart"
+                  className="flex items-center gap-2 px-4 py-2 bg-indigo-900/40 border border-indigo-500/30 rounded-xl text-indigo-200 hover:text-cyan-400 hover:border-cyan-400/50 transition-all group text-sm font-bold"
+                >
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                  Cart
+                </Link>
+
+                <button 
+                  onClick={() => auth?.logout?.()}
+                  className="flex items-center gap-2 px-4 py-2 bg-red-900/10 border border-red-500/20 rounded-xl text-red-400 hover:text-red-300 hover:bg-red-500/20 hover:border-red-400/50 transition-all group text-sm font-bold"
+                >
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                  </svg>
+                  Log out
+                </button>
+              </>
+            ) : (
+              // SHOW IF LOGGED OUT
+              <>
+                <Link href="/login" className="text-sm font-semibold text-indigo-200 hover:text-cyan-100 transition">
+                  Log in
+                </Link>
+                <Link href="/register" className="text-sm font-semibold bg-linear-to-r from-cyan-500 to-indigo-500 text-cyan-50 px-5 py-2.5 rounded-xl hover:shadow-[0_0_20px_rgba(34,211,238,0.4)] hover:scale-105 transition-all duration-300">
+                  Sign Up
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </nav>
@@ -137,7 +181,6 @@ export default function Home() {
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4">
-            {/* THIS GOES TO THE DEDICATED MARKETPLACE */}
             <Link href="/marketplace" className="bg-linear-to-r from-cyan-600 to-indigo-600 text-cyan-50 px-8 py-4 rounded-2xl text-lg font-bold hover:shadow-[0_0_30px_rgba(99,102,241,0.5)] transition-all duration-300 flex items-center justify-center gap-3 group">
               Browse Marketplace
               <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -204,7 +247,6 @@ export default function Home() {
                     <h3 className="font-extrabold text-cyan-50 text-lg mb-1 line-clamp-1">{product.title}</h3>
                     <p className="text-xs text-indigo-300/70 font-medium mb-5">Supplier: {product.supplier?.name || "Verified Mill"}</p>
                     
-                    {/* THIS GOES DIRECTLY TO PRODUCT DETAILS */}
                     <Link href={`/product/${product._id}`} className="mt-auto w-full block text-center bg-indigo-600/20 hover:bg-linear-to-r hover:from-cyan-600 hover:to-indigo-600 border border-indigo-400/30 hover:border-transparent text-cyan-100 py-2.5 rounded-xl text-sm font-bold transition-all duration-300">
                       View Details
                     </Link>
@@ -265,18 +307,16 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="border-t border-indigo-500/20 bg-[#060913] relative z-10 mt-auto">
-        <div className="max-w-7xl mx-auto px-6 py-12 flex flex-col md:flex-row justify-between items-center gap-6">
-          <div className="text-2xl font-extrabold text-cyan-50 tracking-tighter flex items-center gap-3">
-            <div className="w-10 h-10 bg-linear-to-br from-cyan-400 to-indigo-600 rounded-xl flex items-center justify-center shadow-[0_0_20px_rgba(34,211,238,0.4)]">
-              <svg className="w-6 h-6 text-cyan-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1v2.5M14 4l-2-1-2 1M4 7l2-1M4 7l2 1M4 7v2.5M12 21l-2-1m2 1l2-1m-2 1v-2.5M6 18l-2-1v-2.5M18 18l2-1v-2.5" />
-              </svg>
-            </div>
-            Thread<span className="text-cyan-400">Market</span>
+      <footer className="w-full border-t border-indigo-500/20 bg-[#0B1120]/80 backdrop-blur-xl py-8 z-50 relative mt-auto">
+        <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-4">
+          <div className="text-indigo-300/60 text-sm font-medium">
+            &copy; {new Date().getFullYear()} ThreadMarket. All rights reserved.
           </div>
-          <p className="text-cyan-50/70 text-sm font-medium">© {new Date().getFullYear()} ThreadMarket. Built for the modern supply chain.</p>
+          <div className="flex gap-6 text-sm text-indigo-400 hover:text-cyan-400 transition-colors cursor-pointer">
+            <span>Terms of Service</span>
+            <span>Privacy Policy</span>
+            <span>Contact Support</span>
+          </div>
         </div>
       </footer>
     </div>

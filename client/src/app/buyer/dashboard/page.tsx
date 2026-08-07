@@ -1,177 +1,212 @@
-/* eslint-disable @next/next/no-img-element */
+/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
-import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
+import { AuthContext } from "../../../context/AuthContext";
 
-interface Product {
-  _id: string;
-  title: string;
-  description: string;
-  fabricType: string;
-  price: number;
-  moq: number;
-  images: string[];
-  supplier?: {
-    name: string;
-  };
-}
+export default function BuyerProfile() {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const auth = useContext(AuthContext) as any;
+  const user = auth?.user;
 
-// Standard categories we defined in the supplier form
-const CATEGORIES = ["All", "Cotton", "Silk", "Linen", "Polyester", "Wool", "Blend"];
-
-export default function BuyerDashboard() {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
-  
-  // New States for Search and Filtering
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("All");
-
-  useEffect(() => {
-    const fetchAllProducts = async () => {
-      try {
-        const res = await fetch("http://localhost:5000/api/products");
-        if (res.ok) {
-          const data = await res.json();
-          setProducts(data);
-        }
-      } catch (error) {
-        console.error("Failed to load marketplace products:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchAllProducts();
-  }, []);
-
-  // Filter Logic: Runs instantly on the frontend whenever search or category changes
-  const filteredProducts = products.filter((product) => {
-    const matchesSearch = 
-      product.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-      product.description.toLowerCase().includes(searchQuery.toLowerCase());
-      
-    const matchesCategory = 
-      selectedCategory === "All" || product.fabricType === selectedCategory;
-
-    return matchesSearch && matchesCategory;
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    businessType: "",
+    industry: "",
+    preferredFabrics: "",
+    categoriesOfInterest: "",
+    typicalOrderQuantity: "",
+    budgetRange: "",
+    additionalPreferences: ""
   });
 
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      const prefs = user.preferences || {};
+      setFormData({
+        name: user.name || "",
+        email: user.email || "",
+        businessType: prefs.businessType || "",
+        industry: prefs.industry || "",
+        preferredFabrics: Array.isArray(prefs.preferredFabrics) ? prefs.preferredFabrics.join(", ") : (prefs.preferredFabrics || ""),
+        categoriesOfInterest: Array.isArray(prefs.categoriesOfInterest) ? prefs.categoriesOfInterest.join(", ") : (prefs.categoriesOfInterest || ""),
+        typicalOrderQuantity: prefs.typicalOrderQuantity || "",
+        budgetRange: prefs.budgetRange || "",
+        additionalPreferences: prefs.additionalPreferences || ""
+      });
+    }
+  }, [user]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSaving(true);
+    
+    // Simulate API call to save updated preferences
+    setTimeout(() => {
+      alert("Profile and sourcing preferences updated successfully!");
+      setIsSaving(false);
+    }, 800);
+  };
+
+  if (!user) {
+    return (
+      <div className="p-10 text-cyan-50 animate-pulse">
+        Loading profile...
+      </div>
+    );
+  }
+
+  // Notice: No min-h-screen, no flex-1, just a clean max-width container 
+  // that flows naturally inside your existing right-side layout.
   return (
-    <div className="max-w-7xl mx-auto">
+    <div className="max-w-4xl mx-auto p-6 md:p-8">
+      
       <header className="mb-8">
-        <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight">Textile Marketplace</h1>
-        <p className="text-slate-500 mt-2 text-lg">Browse and source fabrics directly from verified suppliers.</p>
+        <h1 className="text-3xl font-extrabold text-cyan-50 tracking-tighter">My Profile & Settings</h1>
+        <p className="text-indigo-300/80 mt-1">Review and update the sourcing preferences extracted by our AI.</p>
       </header>
 
-      {/* --- NEW: Search & Filter Toolbar --- */}
-      <div className="bg-slate-50/80 backdrop-blur-md rounded-2xl border border-slate-200/60 p-4 mb-10 shadow-sm flex flex-col md:flex-row gap-4 justify-between items-center z-20 relative">
+      <form onSubmit={handleSave} className="space-y-8 pb-12">
         
-        {/* Search Bar */}
-        <div className="relative w-full md:w-96 shrink-0">
-          <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
-          <input 
-            type="text" 
-            placeholder="Search fabrics, weaves, or suppliers..." 
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-11 pr-4 py-3 bg-white border border-slate-200/80 rounded-xl focus:ring-2 focus:ring-slate-400 focus:border-slate-400 outline-none transition-all text-slate-900 shadow-sm font-medium placeholder:text-slate-400"
-          />
-        </div>
-
-        {/* Category Filter Pills */}
-        <div className="flex gap-2 overflow-x-auto w-full md:w-auto pb-2 md:pb-0 scrollbar-hide">
-          {CATEGORIES.map((cat) => (
-            <button
-              key={cat}
-              onClick={() => setSelectedCategory(cat)}
-              className={`px-4 py-2.5 rounded-xl text-sm font-bold whitespace-nowrap transition-all shadow-sm ${
-                selectedCategory === cat
-                  ? "bg-slate-900 text-white shadow-slate-900/20"
-                  : "bg-white text-slate-600 border border-slate-200/80 hover:bg-slate-100 hover:text-slate-900"
-              }`}
-            >
-              {cat}
-            </button>
-          ))}
-        </div>
-      </div>
-      {/* --- END TOOLBAR --- */}
-
-      {loading ? (
-        <div className="text-center py-20 text-slate-500 font-medium animate-pulse">Loading marketplace...</div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {filteredProducts.length === 0 ? (
-            <div className="col-span-full text-center py-20 bg-slate-50/80 backdrop-blur-sm rounded-2xl border border-slate-200/60 text-slate-500 shadow-sm flex flex-col items-center justify-center">
-              <svg className="w-12 h-12 text-slate-300 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <span className="text-lg font-semibold text-slate-700">No fabrics found</span>
-              <p className="text-sm mt-1">Try adjusting your search or selecting a different category.</p>
-              <button 
-                onClick={() => { setSearchQuery(""); setSelectedCategory("All"); }}
-                className="mt-6 bg-white border border-slate-200 px-4 py-2 rounded-lg text-sm font-bold text-slate-700 hover:bg-slate-50 transition-colors"
-              >
-                Clear Filters
-              </button>
+        {/* SECTION 1: Basic Account Info */}
+        <div className="bg-[#0B1120]/60 backdrop-blur-md p-8 rounded-3xl border border-indigo-500/20 shadow-xl">
+          <h2 className="text-xl font-bold text-cyan-50 mb-6 flex items-center gap-2">
+            <svg className="w-5 h-5 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+            Account Details
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-indigo-400/70 mb-2">Full Name</label>
+              <input 
+                type="text" 
+                name="name"
+                value={formData.name} 
+                onChange={handleChange}
+                className="w-full bg-slate-900/60 border border-indigo-500/30 text-cyan-50 rounded-xl px-4 py-3 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all" 
+              />
             </div>
-          ) : (
-            filteredProducts.map((product) => (
-              <div 
-                key={product._id} 
-                className="bg-slate-50/80 backdrop-blur-sm rounded-2xl border border-slate-200/60 overflow-hidden flex flex-col hover:shadow-xl hover:shadow-slate-200/50 hover:-translate-y-1 hover:border-slate-300/80 transition-all duration-300 group"
-              >
-                {/* Dynamic Image Area */}
-                <div className="h-48 bg-slate-200/50 flex items-center justify-center text-slate-400 border-b border-slate-200/60 overflow-hidden relative">
-                  {product.images && product.images.length > 0 ? (
-                    <img src={product.images[0]} alt={product.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                  ) : (
-                    <span className="text-sm font-medium tracking-widest uppercase">[ No Image ]</span>
-                  )}
-                  {/* Category Badge overlaying the image */}
-                  <span className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm text-slate-900 text-[10px] font-extrabold uppercase tracking-widest px-3 py-1.5 rounded-full shadow-sm">
-                    {product.fabricType}
-                  </span>
-                </div>
-                
-                {/* Card Content Area */}
-                <div className="p-5 flex-1 flex flex-col">
-                  <div className="flex justify-between items-start mb-1 gap-2">
-                    <h3 className="font-bold text-slate-900 truncate">{product.title}</h3>
-                  </div>
-                  
-                  <p className="text-xs text-slate-500 font-medium mb-3">
-                    By: {product.supplier?.name || "Unknown Supplier"}
-                  </p>
-                  
-                  <p className="text-sm text-slate-600 line-clamp-2 mb-6 flex-1 leading-relaxed">
-                    {product.description}
-                  </p>
-                  
-                  <div className="flex justify-between items-end pt-4 border-t border-slate-200/60 mt-auto">
-                    <div>
-                      <div className="font-extrabold text-lg text-slate-900">
-                        ${product.price} <span className="text-xs text-slate-500 font-medium">/m</span>
-                      </div>
-                      <div className="text-xs text-slate-500 font-medium mt-0.5">MOQ: {product.moq}m</div>
-                    </div>
-                    <Link 
-                      href={`/product/${product._id}`} 
-                      className="bg-slate-900 text-white px-4 py-2 rounded-xl text-sm font-semibold hover:bg-slate-800 transition-colors shadow-md shadow-slate-900/10"
-                    >
-                       View Details
-                    </Link>
-                  </div>
-                </div>
-              </div>
-            ))
-          )}
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-indigo-400/70 mb-2">Email Address</label>
+              <input 
+                type="email" 
+                name="email"
+                value={formData.email} 
+                disabled
+                className="w-full bg-slate-900/40 border border-indigo-500/20 text-indigo-300 rounded-xl px-4 py-3 cursor-not-allowed opacity-70" 
+              />
+            </div>
+          </div>
         </div>
-      )}
+
+        {/* SECTION 2: AI Sourcing Preferences */}
+        <div className="bg-[#0B1120]/60 backdrop-blur-md p-8 rounded-3xl border border-indigo-500/20 shadow-xl">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-bold text-cyan-50 flex items-center gap-2">
+              <svg className="w-5 h-5 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+              Sourcing Preferences
+            </h2>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-indigo-400/70 mb-2">Business Type</label>
+              <input 
+                type="text" 
+                name="businessType"
+                value={formData.businessType} 
+                onChange={handleChange}
+                className="w-full bg-slate-900/60 border border-indigo-500/30 text-cyan-50 rounded-xl px-4 py-3 focus:outline-none focus:border-cyan-400 transition-all" 
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-indigo-400/70 mb-2">Industry / Niche</label>
+              <input 
+                type="text" 
+                name="industry"
+                value={formData.industry} 
+                onChange={handleChange}
+                className="w-full bg-slate-900/60 border border-indigo-500/30 text-cyan-50 rounded-xl px-4 py-3 focus:outline-none focus:border-cyan-400 transition-all" 
+              />
+            </div>
+            
+            <div className="col-span-1 md:col-span-2">
+              <label className="block text-xs font-bold uppercase tracking-wider text-indigo-400/70 mb-2">Preferred Fabrics (Comma separated)</label>
+              <input 
+                type="text" 
+                name="preferredFabrics"
+                value={formData.preferredFabrics} 
+                onChange={handleChange}
+                placeholder="e.g. Organic Cotton, Mulberry Silk"
+                className="w-full bg-slate-900/60 border border-indigo-500/30 text-cyan-50 rounded-xl px-4 py-3 focus:outline-none focus:border-cyan-400 transition-all" 
+              />
+            </div>
+
+            <div className="col-span-1 md:col-span-2">
+              <label className="block text-xs font-bold uppercase tracking-wider text-indigo-400/70 mb-2">Categories of Interest (Comma separated)</label>
+              <input 
+                type="text" 
+                name="categoriesOfInterest"
+                value={formData.categoriesOfInterest} 
+                onChange={handleChange}
+                className="w-full bg-slate-900/60 border border-indigo-500/30 text-cyan-50 rounded-xl px-4 py-3 focus:outline-none focus:border-cyan-400 transition-all" 
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-indigo-400/70 mb-2">Typical Order Quantity</label>
+              <input 
+                type="text" 
+                name="typicalOrderQuantity"
+                value={formData.typicalOrderQuantity} 
+                onChange={handleChange}
+                placeholder="e.g. 50-100 meters"
+                className="w-full bg-slate-900/60 border border-indigo-500/30 text-cyan-50 rounded-xl px-4 py-3 focus:outline-none focus:border-cyan-400 transition-all" 
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-indigo-400/70 mb-2">Budget Range</label>
+              <input 
+                type="text" 
+                name="budgetRange"
+                value={formData.budgetRange} 
+                onChange={handleChange}
+                placeholder="e.g. $15 - $30 / meter"
+                className="w-full bg-slate-900/60 border border-indigo-500/30 text-cyan-50 rounded-xl px-4 py-3 focus:outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 transition-all font-medium" 
+              />
+            </div>
+
+            <div className="col-span-1 md:col-span-2">
+              <label className="block text-xs font-bold uppercase tracking-wider text-indigo-400/70 mb-2">Additional Requirements</label>
+              <textarea 
+                name="additionalPreferences"
+                value={formData.additionalPreferences} 
+                onChange={handleChange}
+                rows={3}
+                className="w-full bg-slate-900/60 border border-indigo-500/30 text-cyan-50 rounded-xl px-4 py-3 focus:outline-none focus:border-cyan-400 transition-all resize-none" 
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="flex justify-end pt-2">
+          <button 
+            type="submit" 
+            disabled={isSaving}
+            className="bg-linear-to-r from-cyan-600 to-indigo-600 text-cyan-50 px-8 py-4 rounded-2xl font-bold hover:shadow-[0_0_20px_rgba(34,211,238,0.4)] transition-all disabled:opacity-50 flex items-center gap-2"
+          >
+            {isSaving ? "Saving..." : "Save Preferences"}
+          </button>
+        </div>
+
+      </form>
     </div>
   );
 }

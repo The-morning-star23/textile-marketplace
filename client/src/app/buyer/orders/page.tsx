@@ -23,9 +23,14 @@ interface Order {
 }
 
 export default function BuyerOrders() {
-  const auth = useContext(AuthContext);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const auth = useContext(AuthContext) as any;
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  // Search and Filter States
+  const [searchQuery, setSearchQuery] = useState("");
+  const [timeFilter, setTimeFilter] = useState("all"); // 'all', '30days', 'thisYear'
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -54,100 +59,189 @@ export default function BuyerOrders() {
     }
   }, [auth]);
 
-  // Helper function to pick the right color for the status badge
+  // Combined Filter Logic (Text Search + Time Buttons)
+  const filteredOrders = orders.filter((order) => {
+    // 1. Text Search Match
+    const query = searchQuery.toLowerCase();
+    const productName = order.product?.title?.toLowerCase() || "";
+    const supplierName = order.supplier?.name?.toLowerCase() || "";
+    const orderId = order._id.toLowerCase();
+    
+    const dateObj = new Date(order.createdAt);
+    const dateStr = dateObj.toLocaleDateString().toLowerCase();
+    const yearStr = dateObj.getFullYear().toString();
+    const monthStr = dateObj.toLocaleString('default', { month: 'long' }).toLowerCase();
+
+    const matchesSearch = 
+      productName.includes(query) ||
+      supplierName.includes(query) ||
+      orderId.includes(query) ||
+      dateStr.includes(query) ||
+      yearStr.includes(query) ||
+      monthStr.includes(query);
+
+    // 2. Time Filter Match
+    let matchesTime = true;
+    const now = new Date();
+    
+    if (timeFilter === "30days") {
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(now.getDate() - 30);
+      matchesTime = dateObj >= thirtyDaysAgo;
+    } else if (timeFilter === "thisYear") {
+      matchesTime = dateObj.getFullYear() === now.getFullYear();
+    }
+
+    return matchesSearch && matchesTime;
+  });
+
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "Pending": return "bg-amber-100 text-amber-800 border-amber-200";
-      case "Processing": return "bg-blue-100 text-blue-800 border-blue-200";
-      case "Shipped": return "bg-purple-100 text-purple-800 border-purple-200";
-      case "Delivered": return "bg-emerald-100 text-emerald-800 border-emerald-200";
-      default: return "bg-slate-100 text-slate-800 border-slate-200";
+      case "Pending": return "bg-amber-500/20 text-amber-400 border-amber-500/30";
+      case "Processing": return "bg-blue-500/20 text-blue-400 border-blue-500/30";
+      case "Shipped": return "bg-purple-500/20 text-purple-400 border-purple-500/30";
+      case "Delivered": return "bg-emerald-500/20 text-emerald-400 border-emerald-500/30";
+      default: return "bg-slate-500/20 text-slate-300 border-slate-500/30";
     }
   };
 
   return (
-    <div className="max-w-6xl mx-auto">
-      <header className="mb-10 flex flex-col md:flex-row md:justify-between md:items-end gap-4">
+    <div className="max-w-6xl mx-auto p-6 md:p-10 font-sans">
+      <header className="mb-8 flex flex-col md:flex-row md:justify-between md:items-end gap-6">
         <div>
-          <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight">My Purchases</h1>
-          <p className="text-slate-500 mt-2 text-lg">Track your fabric orders and delivery statuses.</p>
+          <h1 className="text-3xl font-extrabold text-cyan-50 tracking-tighter">My Purchases</h1>
+          <p className="text-indigo-300/80 mt-1">Track your fabric orders, sample requests, and delivery statuses.</p>
         </div>
         <Link 
-          href="/buyer/dashboard"
-          className="bg-slate-900 text-white px-5 py-2.5 rounded-xl font-bold hover:bg-slate-800 transition shadow-md shadow-slate-900/10 inline-block text-center"
+          href="/marketplace"
+          className="bg-linear-to-r from-cyan-600 to-indigo-600 text-cyan-50 px-6 py-3 rounded-xl font-bold hover:shadow-[0_0_20px_rgba(34,211,238,0.4)] transition-all text-center shrink-0"
         >
           Browse Marketplace
         </Link>
       </header>
 
+      {/* --- ENHANCED SEARCH & FILTER TOOLBAR --- */}
+      <div className="mb-10 flex flex-col md:flex-row gap-4 items-start md:items-center">
+        
+        {/* Instant Search Bar */}
+        <div className="relative w-full max-w-xl">
+          <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-indigo-400 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          <input 
+            type="text" 
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search products, suppliers, or Order IDs..."
+            className="w-full bg-[#0B1120]/60 backdrop-blur-md border border-indigo-500/30 text-cyan-50 rounded-xl pl-12 pr-12 py-3 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all placeholder:text-indigo-400/50 shadow-xl"
+          />
+          {/* Clear Search Button (Shows only when typing) */}
+          {searchQuery && (
+            <button 
+              onClick={() => setSearchQuery("")}
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-indigo-400 hover:text-cyan-400 transition-colors"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          )}
+        </div>
+
+        {/* Quick Date Filters */}
+        <div className="flex items-center gap-2 overflow-x-auto w-full md:w-auto pb-2 md:pb-0 scrollbar-hide">
+          <button 
+            onClick={() => setTimeFilter("all")}
+            className={`px-4 py-2 rounded-xl text-sm font-bold whitespace-nowrap transition-all ${timeFilter === 'all' ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/50' : 'bg-[#0B1120]/60 text-indigo-300 border border-indigo-500/30 hover:border-indigo-400 hover:text-indigo-200'}`}
+          >
+            All Time
+          </button>
+          <button 
+            onClick={() => setTimeFilter("30days")}
+            className={`px-4 py-2 rounded-xl text-sm font-bold whitespace-nowrap transition-all ${timeFilter === '30days' ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/50' : 'bg-[#0B1120]/60 text-indigo-300 border border-indigo-500/30 hover:border-indigo-400 hover:text-indigo-200'}`}
+          >
+            Last 30 Days
+          </button>
+          <button 
+            onClick={() => setTimeFilter("thisYear")}
+            className={`px-4 py-2 rounded-xl text-sm font-bold whitespace-nowrap transition-all ${timeFilter === 'thisYear' ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/50' : 'bg-[#0B1120]/60 text-indigo-300 border border-indigo-500/30 hover:border-indigo-400 hover:text-indigo-200'}`}
+          >
+            This Year
+          </button>
+        </div>
+      </div>
+
+      {/* --- ORDER LIST RENDER --- */}
       {loading ? (
-        <div className="text-center py-20 text-slate-500 font-medium animate-pulse">Loading your purchase history...</div>
-      ) : orders.length === 0 ? (
-        <div className="text-center py-20 bg-slate-50/80 backdrop-blur-sm rounded-3xl border border-slate-200/60 shadow-sm flex flex-col items-center">
-          <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4">
-            <svg className="w-8 h-8 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div className="text-center py-20 text-cyan-50/50 font-medium animate-pulse">Loading your purchase history...</div>
+      ) : filteredOrders.length === 0 ? (
+        <div className="text-center py-24 bg-[#0B1120]/60 backdrop-blur-md rounded-3xl border border-indigo-500/20 shadow-xl flex flex-col items-center">
+          <div className="w-16 h-16 bg-indigo-500/10 rounded-2xl border border-indigo-500/30 flex items-center justify-center mb-6">
+            <svg className="w-8 h-8 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
             </svg>
           </div>
-          <h2 className="text-xl font-bold text-slate-900">No orders placed yet</h2>
-          <p className="text-slate-500 mt-2 mb-6">Head over to the marketplace to find the perfect fabrics for your next project.</p>
-          <Link href="/buyer/dashboard" className="text-indigo-600 font-bold hover:text-indigo-700 transition">
-            Explore Fabrics &rarr;
-          </Link>
+          <h2 className="text-xl font-bold text-cyan-50">No orders found</h2>
+          <p className="text-indigo-300/70 mt-2 mb-8 max-w-md text-center">
+            {searchQuery || timeFilter !== 'all' ? "We couldn't find any orders matching your filters." : "You haven't placed any orders yet. Head over to the marketplace to source fabrics."}
+          </p>
+          {searchQuery || timeFilter !== 'all' ? (
+            <button onClick={() => { setSearchQuery(""); setTimeFilter("all"); }} className="text-cyan-400 font-bold hover:text-cyan-300 transition">
+              Clear All Filters
+            </button>
+          ) : (
+            <Link href="/marketplace" className="text-cyan-400 font-bold hover:text-cyan-300 transition">
+              Explore Fabrics &rarr;
+            </Link>
+          )}
         </div>
       ) : (
         <div className="space-y-6">
-          {orders.map((order) => (
-            <div key={order._id} className="bg-slate-50/80 backdrop-blur-md rounded-2xl border border-slate-200/60 p-6 shadow-sm hover:shadow-md transition-shadow">
+          {filteredOrders.map((order) => (
+            <div key={order._id} className="bg-[#0B1120]/60 backdrop-blur-md rounded-3xl border border-indigo-500/20 p-6 md:p-8 shadow-xl hover:border-cyan-500/30 transition-colors group">
               
-              {/* Order Header */}
-              <div className="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-slate-200/80 pb-4 mb-4 gap-4">
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-indigo-500/20 pb-5 mb-5 gap-4">
                 <div>
-                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Order #{order._id.slice(-8)}</p>
-                  <p className="text-sm text-slate-500 font-medium">Placed on {new Date(order.createdAt).toLocaleDateString()}</p>
+                  <p className="text-xs font-bold text-indigo-400/70 uppercase tracking-widest mb-1">Order #{order._id.slice(-8)}</p>
+                  <p className="text-sm text-indigo-200/80 font-medium">Placed on {new Date(order.createdAt).toLocaleDateString()}</p>
                 </div>
                 
-                {/* Status Badge (Read-Only for Buyer) */}
                 <div className="flex items-center gap-3">
-                  <span className="text-sm font-semibold text-slate-600">Status:</span>
-                  <span className={`px-4 py-1.5 rounded-full text-sm font-bold border ${getStatusColor(order.status)}`}>
+                  <span className="text-sm font-semibold text-indigo-300/60">Status:</span>
+                  <span className={`px-4 py-1.5 rounded-full text-xs font-extrabold tracking-wide border uppercase ${getStatusColor(order.status)}`}>
                     {order.status}
                   </span>
                 </div>
               </div>
 
-              {/* Order Body */}
-              <div className="flex flex-col md:flex-row gap-6">
-                
-                {/* Product Info Thumbnail */}
-                <div className="flex gap-4 md:w-1/2">
-                  <div className="w-20 h-20 bg-slate-200 rounded-xl overflow-hidden shrink-0 border border-slate-200/80">
+              <div className="flex flex-col md:flex-row gap-8">
+                <div className="flex gap-5 md:w-1/2">
+                  <div className="w-24 h-24 bg-slate-900 rounded-2xl overflow-hidden shrink-0 border border-indigo-500/30">
                     {order.product?.images && order.product.images.length > 0 ? (
-                      <img src={order.product.images[0]} alt="Product" className="w-full h-full object-cover" />
+                      <img src={order.product.images[0]} alt="Product" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center text-[10px] text-slate-400 font-bold uppercase text-center p-2">No Image</div>
+                      <div className="w-full h-full flex items-center justify-center text-[10px] text-indigo-400/50 font-bold uppercase text-center p-2">No Image</div>
                     )}
                   </div>
-                  <div>
-                    <h3 className="font-extrabold text-slate-900 text-lg hover:text-indigo-600 transition">
-                      <Link href={`/buyer/product/${order.product?._id}`}>
+                  <div className="flex flex-col justify-center">
+                    <h3 className="font-extrabold text-cyan-50 text-lg hover:text-cyan-400 transition-colors line-clamp-1">
+                      <Link href={`/product/${order.product?._id}`}>
                         {order.product?.title || "Product Unavailable"}
                       </Link>
                     </h3>
-                    <p className="text-sm text-slate-600 font-medium mt-1">From: {order.supplier?.name || "Unknown Supplier"}</p>
-                    <p className="text-sm text-slate-500 font-medium">Qty: {order.quantity} meters</p>
+                    <p className="text-sm text-indigo-300/70 font-medium mt-1">From: {order.supplier?.name || "Unknown Supplier"}</p>
+                    <p className="text-sm text-indigo-400 font-bold mt-2">Qty: {order.quantity} meters</p>
                   </div>
                 </div>
 
-                {/* Price & Shipping Info */}
-                <div className="md:w-1/2 bg-white/60 rounded-xl p-4 border border-slate-200/60 flex flex-col justify-between">
+                <div className="md:w-1/2 bg-slate-900/40 rounded-2xl p-5 border border-indigo-500/10 flex flex-col justify-between">
                   <div>
-                    <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Shipping To</h4>
-                    <p className="text-sm text-slate-700 font-medium line-clamp-2">{order.shippingAddress}</p>
+                    <h4 className="text-xs font-bold text-indigo-400/60 uppercase tracking-widest mb-2">Shipping To</h4>
+                    <p className="text-sm text-indigo-200 font-medium line-clamp-2 leading-relaxed">{order.shippingAddress}</p>
                   </div>
-                  <div className="mt-4 pt-4 border-t border-slate-200 flex justify-between items-end">
-                    <span className="text-sm font-bold text-slate-500 uppercase tracking-widest">Total Paid</span>
-                    <span className="text-2xl font-extrabold text-slate-900">${order.totalPrice.toFixed(2)}</span>
+                  <div className="mt-4 pt-4 border-t border-indigo-500/20 flex justify-between items-end">
+                    <span className="text-xs font-bold text-indigo-400/60 uppercase tracking-widest">Total Paid</span>
+                    <span className="text-2xl font-extrabold text-emerald-400">${order.totalPrice.toFixed(2)}</span>
                   </div>
                 </div>
                 
