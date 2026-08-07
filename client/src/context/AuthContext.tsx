@@ -9,12 +9,13 @@ interface User {
   name: string;
   email: string;
   role: string;
+  isOnboarded?: boolean;
 }
 
 interface AuthContextType {
   user: User | null;
   token: string | null;
-  isLoading: boolean; // <-- Added this
+  isLoading: boolean;
   login: (userData: User, authToken: string) => void;
   logout: () => void;
 }
@@ -47,10 +48,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     localStorage.setItem("user", JSON.stringify(userData));
     localStorage.setItem("token", authToken); 
     
+    // SMART ROUTING: Check role AND onboarding status
     if (userData.role === "supplier") {
       router.push("/supplier/dashboard");
     } else {
-      router.push("/buyer/dashboard");
+      // If they are a buyer, check if they finished onboarding
+      if (userData.isOnboarded) {
+        router.push("/buyer/dashboard"); // Already onboarded, go to dashboard
+      } else {
+        router.push("/onboarding"); // New buyer! Send them to AI onboarding
+      }
     }
   };
 

@@ -6,6 +6,7 @@ const authRoutes = require('./routes/authRoutes');
 const productRoutes = require('./routes/productRoutes');
 const orderRoutes = require('./routes/orderRoutes');
 const aiRoutes = require("./routes/aiRoutes");
+const onboardingRoutes = require('./routes/onboardingRoutes');
 
 const app = express();
 
@@ -22,6 +23,7 @@ app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/upload', require('./routes/uploadRoutes'));
 app.use("/api/ai", aiRoutes);
+app.use('/api/onboarding', onboardingRoutes);
 
 app.get('/', (req, res) => res.send('Marketplace API is running...'));
 
