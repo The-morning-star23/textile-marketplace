@@ -54,7 +54,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } else {
       // If they are a buyer, check if they finished onboarding
       if (userData.isOnboarded) {
-        router.push("/buyer/dashboard"); // Already onboarded, go to dashboard
+        router.push("/marketplace"); // Already onboarded, go to marketplace
       } else {
         router.push("/onboarding"); // New buyer! Send them to AI onboarding
       }

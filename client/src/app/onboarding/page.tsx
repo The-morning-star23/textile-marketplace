@@ -74,7 +74,7 @@ export default function BuyerOnboarding() {
       if (res.ok) {
         const updatedUser = { ...auth.user, isOnboarded: true };
         auth.login(updatedUser, auth.token);
-        router.push("/buyer/dashboard");
+        router.push("/marketplace"); // Redirect to marketplace after successful onboarding
       }
     } catch (error) {
       console.error(error);
@@ -95,7 +95,7 @@ export default function BuyerOnboarding() {
       if (res.ok) {
         const updatedUser = { ...auth.user, isOnboarded: true };
         auth.login(updatedUser, auth.token);
-        router.push("/buyer/dashboard");
+        router.push("/marketplace");
       }
     } catch (error) {
       console.error(error);

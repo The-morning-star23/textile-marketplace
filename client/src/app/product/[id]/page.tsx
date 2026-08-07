@@ -42,6 +42,9 @@ export default function ProductDetailsPage() {
   const [error, setError] = useState<string | null>(null);
   const [selectedImage, setSelectedImage] = useState<string>("");
   const [quantity, setQuantity] = useState(1);
+  
+  // NEW: Search State
+  const [searchQuery, setSearchQuery] = useState("");
 
   const isLoggedIn = auth?.token || (typeof window !== "undefined" && localStorage.getItem("token"));
 
@@ -65,6 +68,14 @@ export default function ProductDetailsPage() {
 
     if (productId) fetchProduct();
   }, [productId]);
+
+  // NEW: Search Handler
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      router.push(`/marketplace?search=${encodeURIComponent(searchQuery)}`);
+    }
+  };
 
   if (loading) {
     return (
@@ -98,7 +109,7 @@ export default function ProductDetailsPage() {
   return (
     <div className="min-h-screen bg-[#080C17] flex flex-col font-sans relative selection:bg-cyan-500/30 selection:text-cyan-100">
       
-      {/* AURORA LIGHTS BACKGROUND (Slightly varied color/position for this page) */}
+      {/* AURORA LIGHTS BACKGROUND */}
       <div className="inset-0 z-0 overflow-hidden pointer-events-none fixed">
         <div className="absolute top-[-10%] right-[-10%] w-[50vw] h-[50vw] bg-violet-600/15 rounded-full blur-[120px] mix-blend-screen animate-pulse duration-10000"></div>
         <div className="absolute bottom-[20%] left-[-10%] w-[40vw] h-[40vw] bg-cyan-600/10 rounded-full blur-[100px] mix-blend-screen"></div>
@@ -108,6 +119,7 @@ export default function ProductDetailsPage() {
       {/* Smart Navbar (Consistent Dark Theme) */}
       <nav className="relative z-50 w-full backdrop-blur-2xl bg-[#0B1120]/80 border-b border-indigo-500/20 shadow-xl">
         <div className="max-w-7xl mx-auto px-6 h-20 flex justify-between items-center">
+          
           <Link href="/" className="text-2xl font-extrabold text-cyan-50 tracking-tighter flex items-center gap-3">
             <div className="w-10 h-10 bg-linear-to-br from-cyan-400 to-indigo-600 rounded-xl flex items-center justify-center shadow-[0_0_20px_rgba(34,211,238,0.4)]">
               <svg className="w-6 h-6 text-cyan-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -116,6 +128,22 @@ export default function ProductDetailsPage() {
             </div>
             Thread<span className="text-cyan-400">Market</span>
           </Link>
+
+          {/* NEW: Search Bar (Hidden on very small screens, expands in middle) */}
+          <form onSubmit={handleSearch} className="hidden md:flex flex-1 max-w-md mx-8 relative">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search fabrics, categories..."
+              className="w-full bg-slate-900/60 border border-indigo-500/30 text-cyan-50 text-sm rounded-full py-2.5 pl-5 pr-10 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all placeholder-indigo-300/40"
+            />
+            <button type="submit" className="absolute right-4 top-3 text-indigo-400 hover:text-cyan-400 transition-colors">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </button>
+          </form>
 
           <div className="flex items-center gap-4">
             {isLoggedIn ? (
@@ -126,6 +154,15 @@ export default function ProductDetailsPage() {
                 <Link href="/buyer/cart" className="text-sm font-semibold bg-indigo-600/20 text-cyan-100 border border-indigo-500/30 px-5 py-2.5 rounded-xl hover:bg-indigo-500/30 transition-all">
                   Cart
                 </Link>
+                <button 
+                  onClick={() => auth.logout()}
+                  className="flex items-center gap-2 text-sm font-semibold text-red-400 border border-red-500/30 px-4 py-2.5 rounded-xl hover:bg-red-500/10 hover:border-red-400 hover:text-red-300 transition-all cursor-pointer ml-2"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                  </svg>
+                  Log out
+                </button>
               </>
             ) : (
               <>
@@ -317,6 +354,21 @@ export default function ProductDetailsPage() {
           </div>
         </div>
       </main>
+
+      {/* NEW: Inline Footer matching the platform's aesthetic */}
+      <footer className="w-full border-t border-indigo-500/20 bg-[#0B1120]/80 backdrop-blur-xl py-8 z-50 relative">
+        <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-4">
+          <div className="text-indigo-300/60 text-sm font-medium">
+            &copy; {new Date().getFullYear()} ThreadMarket. All rights reserved.
+          </div>
+          <div className="flex gap-6 text-sm text-indigo-400 hover:text-cyan-400 transition-colors cursor-pointer">
+            <span>Terms of Service</span>
+            <span>Privacy Policy</span>
+            <span>Contact Support</span>
+          </div>
+        </div>
+      </footer>
+
     </div>
   );
 }
