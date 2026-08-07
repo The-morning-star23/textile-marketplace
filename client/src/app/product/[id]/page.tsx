@@ -43,7 +43,7 @@ export default function ProductDetailsPage() {
   const [selectedImage, setSelectedImage] = useState<string>("");
   const [quantity, setQuantity] = useState(1);
   
-  // NEW: Search State
+  // Search State
   const [searchQuery, setSearchQuery] = useState("");
 
   const isLoggedIn = auth?.token || (typeof window !== "undefined" && localStorage.getItem("token"));
@@ -58,6 +58,10 @@ export default function ProductDetailsPage() {
         if (data.images && data.images.length > 0) {
           setSelectedImage(data.images[0]);
         }
+        // Set default quantity to MOQ
+        if (data.moq) {
+          setQuantity(data.moq);
+        }
       } catch (err) {
         console.error("Fetch Product Error:", err);
         setError("This fabric is currently unavailable. The inventory might be outdated.");
@@ -69,7 +73,7 @@ export default function ProductDetailsPage() {
     if (productId) fetchProduct();
   }, [productId]);
 
-  // NEW: Search Handler
+  // Search Handler
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
@@ -129,7 +133,7 @@ export default function ProductDetailsPage() {
             Thread<span className="text-cyan-400">Market</span>
           </Link>
 
-          {/* NEW: Search Bar (Hidden on very small screens, expands in middle) */}
+          {/* Search Bar */}
           <form onSubmit={handleSearch} className="hidden md:flex flex-1 max-w-md mx-8 relative">
             <input
               type="text"
@@ -145,20 +149,45 @@ export default function ProductDetailsPage() {
             </button>
           </form>
 
+          {/* UNIFIED NAVIGATION BUTTONS */}
           <div className="flex items-center gap-4">
             {isLoggedIn ? (
               <>
-                <Link href="/buyer/dashboard" className="text-sm font-semibold text-indigo-200 hover:text-cyan-100 transition hidden sm:block">
+                <Link 
+                  href="/buyer/dashboard"
+                  className="hidden sm:flex items-center gap-2 px-4 py-2 bg-indigo-900/40 border border-indigo-500/30 rounded-xl text-indigo-200 hover:text-cyan-400 hover:border-cyan-400/50 transition-all group text-sm font-bold"
+                >
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                  </svg>
                   Dashboard
                 </Link>
-                <Link href="/buyer/cart" className="text-sm font-semibold bg-indigo-600/20 text-cyan-100 border border-indigo-500/30 px-5 py-2.5 rounded-xl hover:bg-indigo-500/30 transition-all">
-                  Cart
-                </Link>
-                <button 
-                  onClick={() => auth.logout()}
-                  className="flex items-center gap-2 text-sm font-semibold text-red-400 border border-red-500/30 px-4 py-2.5 rounded-xl hover:bg-red-500/10 hover:border-red-400 hover:text-red-300 transition-all cursor-pointer ml-2"
+                
+                <Link 
+                  href="/buyer/cart"
+                  className="relative flex items-center gap-2 px-4 py-2 bg-indigo-900/40 border border-indigo-500/30 rounded-xl text-indigo-200 hover:text-cyan-400 hover:border-cyan-400/50 transition-all group text-sm font-bold"
                 >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                  Cart
+                  
+                  {/* Active Notification Badge */}
+                  {cartContext?.itemCount > 0 && (
+                    <span className="absolute -top-2 -right-2 flex h-5 w-5">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-5 w-5 bg-cyan-500 border-2 border-[#0B1120] text-[9px] items-center justify-center font-extrabold text-[#0B1120]">
+                        {cartContext.itemCount}
+                      </span>
+                    </span>
+                  )}
+                </Link>
+
+                <button 
+                  onClick={() => auth?.logout?.()}
+                  className="flex items-center gap-2 px-4 py-2 bg-red-900/10 border border-red-500/20 rounded-xl text-red-400 hover:text-red-300 hover:bg-red-500/20 hover:border-red-400/50 transition-all group text-sm font-bold ml-2"
+                >
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                   </svg>
                   Log out
@@ -166,7 +195,7 @@ export default function ProductDetailsPage() {
               </>
             ) : (
               <>
-                <Link href="/login" className="text-sm font-semibold text-indigo-200 hover:text-cyan-100 transition">
+                <Link href="/login" className="text-sm font-semibold text-indigo-200 hover:text-cyan-100 transition px-4 py-2">
                   Log in
                 </Link>
                 <Link href="/register" className="text-sm font-semibold bg-linear-to-r from-cyan-500 to-indigo-500 text-cyan-50 px-5 py-2.5 rounded-xl hover:shadow-[0_0_20px_rgba(34,211,238,0.4)] transition-all">
@@ -257,9 +286,9 @@ export default function ProductDetailsPage() {
                     <label className="text-lg font-bold text-cyan-50">Order Amount (meters)</label>
                     <div className="flex items-center gap-2 bg-indigo-950/50 rounded-full p-1 border border-indigo-500/30 max-w-50 w-full justify-between">
                       <button 
-                        onClick={() => setQuantity(q => Math.max(1, q - 1))}
+                        onClick={() => setQuantity(q => Math.max(product.moq || 1, q - 1))}
                         className="w-10 h-10 rounded-full bg-indigo-900/50 text-cyan-50 font-bold flex items-center justify-center hover:bg-indigo-800 transition border border-indigo-500/30 disabled:opacity-30"
-                        disabled={quantity <= 1}
+                        disabled={quantity <= (product.moq || 1)}
                       >—</button>
                       <span className="text-xl font-extrabold text-cyan-50 px-4">{quantity}</span>
                       <button 
@@ -290,7 +319,7 @@ export default function ProductDetailsPage() {
                         supplierId: product.supplier?._id || "unknown",
                         moq: product.moq || 1
                       });
-                      alert("Added to cart!");
+                      alert("Added to cart successfully!");
                     }
                   }}
                   className="flex-1 bg-linear-to-r from-cyan-600 to-indigo-600 text-cyan-50 px-8 py-5 rounded-2xl text-lg font-bold hover:shadow-[0_0_30px_rgba(99,102,241,0.5)] transition-all duration-300 disabled:opacity-50 disabled:grayscale flex items-center justify-center gap-3"
@@ -355,8 +384,8 @@ export default function ProductDetailsPage() {
         </div>
       </main>
 
-      {/* NEW: Inline Footer matching the platform's aesthetic */}
-      <footer className="w-full border-t border-indigo-500/20 bg-[#0B1120]/80 backdrop-blur-xl py-8 z-50 relative">
+      {/* Inline Footer */}
+      <footer className="w-full border-t border-indigo-500/20 bg-[#0B1120]/80 backdrop-blur-xl py-8 z-50 relative mt-auto">
         <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-4">
           <div className="text-indigo-300/60 text-sm font-medium">
             &copy; {new Date().getFullYear()} ThreadMarket. All rights reserved.

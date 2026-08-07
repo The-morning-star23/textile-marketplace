@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @next/next/no-img-element */
 "use client";
 
@@ -5,6 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useEffect, useContext } from "react";
 import { AuthContext } from "../context/AuthContext";
+import { CartContext } from "../context/CartContext";
 
 interface Product {
   _id: string;
@@ -22,8 +24,8 @@ const CATEGORIES = ["All", "Cotton", "Silk", "Linen", "Polyester", "Wool", "Blen
 export default function Home() {
   const router = useRouter();
   
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const auth = useContext(AuthContext) as any;
+  const cart = useContext(CartContext) as any;
   const user = auth?.user;
 
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
@@ -139,6 +141,15 @@ export default function Home() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
                   </svg>
                   Cart
+                  {/* Notification Badge */}
+                  {cart?.itemCount > 0 && (
+                    <span className="absolute -top-2 -right-2 flex h-5 w-5">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-5 w-5 bg-cyan-500 border-2 border-[#0B1120] text-[9px] items-center justify-center font-extrabold text-[#0B1120]">
+                        {cart?.itemCount}
+                      </span>
+                    </span>
+                  )}
                 </Link>
 
                 <button 
