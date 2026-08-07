@@ -1,96 +1,130 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useState, useContext } from "react";
-import { AuthContext } from "../../context/AuthContext";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { AuthContext } from "../../context/AuthContext";
 
-export default function Login() {
-  const [formData, setFormData] = useState({ email: "", password: "" });
+export default function LoginPage() {
+  const router = useRouter();
+  const auth = useContext(AuthContext) as any;
+
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const authContext = useContext(AuthContext);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(""); 
+    setError("");
+    setIsLoading(true);
+
     try {
       const res = await fetch("http://localhost:5000/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({ email, password }),
       });
+
       const data = await res.json();
-      
-      if (!res.ok) throw new Error(data.error || "Failed to login"); 
-      
-      if (authContext) {
-        authContext.login(data.user, data.token);
+
+      if (!res.ok) {
+        throw new Error(data.message || data.error || "Login failed");
       }
-    } catch (err) {
-      if (err instanceof Error) {
-        setError(err.message);
+
+      // Log the user in via AuthContext
+      if (auth?.login) {
+        auth.login(data.token, data.user);
       } else {
-        setError("An unexpected error occurred");
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("user", JSON.stringify(data.user));
       }
+
+      // SMART REDIRECT BASED ON ROLE
+      if (data.user?.role === "supplier") {
+        router.push("/supplier/dashboard");
+      } else {
+        router.push("/buyer/dashboard");
+      }
+      
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-950 selection:bg-indigo-500 selection:text-white relative overflow-hidden px-4">
+    <div className="min-h-screen bg-[#080C17] flex items-center justify-center font-sans relative selection:bg-cyan-500/30 selection:text-cyan-100 p-6">
       
-      {/* Immersive Background */}
-      <div className="absolute inset-0 z-0 bg-[linear-gradient(to_right,#ffffff0a_1px,transparent_1px),linear-gradient(to_bottom,#ffffff0a_1px,transparent_1px)] bg-size-[4rem_4rem]">
-        <div className="absolute top-[10%] left-[20%] w-[40%] h-[40%] bg-indigo-600/20 rounded-full blur-[120px]"></div>
-        <div className="absolute bottom-[10%] right-[20%] w-[40%] h-[40%] bg-blue-600/20 rounded-full blur-[120px]"></div>
-      </div>
+      {/* Background Glows (Matching Register Page) */}
+      <div className="absolute top-[-10%] right-[-10%] w-[50vw] h-[50vw] bg-violet-600/15 rounded-full blur-[120px] mix-blend-screen pointer-events-none"></div>
+      <div className="absolute bottom-[20%] left-[-10%] w-[40vw] h-[40vw] bg-cyan-600/10 rounded-full blur-[100px] mix-blend-screen pointer-events-none"></div>
 
-      {/* Frosted Glass Card */}
-      <div className="bg-white/3 backdrop-blur-2xl p-8 sm:p-10 rounded-3xl shadow-2xl border border-white/10 w-full max-w-md relative z-10">
+      <div className="w-full max-w-md bg-[#0B1120]/80 backdrop-blur-2xl border border-indigo-500/20 rounded-3xl p-8 shadow-2xl z-10">
         
-        {/* Logo Mark */}
-        <div className="w-12 h-12 bg-indigo-500/20 border border-indigo-500/30 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/20 mx-auto mb-6">
-          <svg className="w-6 h-6 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1v2.5M14 4l-2-1-2 1M4 7l2-1M4 7l2 1M4 7v2.5M12 21l-2-1m2 1l2-1m-2 1v-2.5M6 18l-2-1v-2.5M18 18l2-1v-2.5" />
-          </svg>
+        <div className="text-center mb-8">
+          <Link href="/" className="inline-flex items-center gap-2 text-2xl font-extrabold text-cyan-50 tracking-tighter mb-2">
+            <div className="w-8 h-8 bg-linear-to-br from-cyan-400 to-indigo-600 rounded-lg flex items-center justify-center shadow-[0_0_15px_rgba(34,211,238,0.4)]">
+              <svg className="w-5 h-5 text-cyan-50" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1v2.5M14 4l-2-1-2 1M4 7l2-1M4 7l2 1M4 7v2.5M12 21l-2-1m2 1l2-1m-2 1v-2.5M6 18l-2-1v-2.5M18 18l2-1v-2.5" /></svg>
+            </div>
+            Thread<span className="text-cyan-400">Market</span>
+          </Link>
+          <p className="text-indigo-300/80 text-sm font-medium">Welcome back. Log in to your account.</p>
         </div>
 
-        <h2 className="text-3xl font-extrabold mb-8 text-center text-white tracking-tight">Welcome Back</h2>
-        
         {error && (
-          <div className="bg-red-500/10 text-red-400 p-3.5 rounded-xl text-sm mb-6 border border-red-500/20 font-medium backdrop-blur-md">
+          <div className="mb-6 bg-red-500/10 border border-red-500/30 text-red-400 px-4 py-3 rounded-xl text-sm font-bold text-center">
             {error}
           </div>
         )}
-        
-        <form onSubmit={handleSubmit} className="space-y-5">
+
+        <form onSubmit={handleLogin} className="space-y-5">
+          
           <div>
+            <label className="text-xs font-bold text-indigo-300 uppercase tracking-wider mb-1 block">Email Address</label>
             <input 
               type="email" 
-              placeholder="Email Address" 
               required 
-              className="w-full p-4 bg-slate-900/50 border border-white/10 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition text-white placeholder-slate-500"
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })} 
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full bg-slate-900/60 border border-indigo-500/30 text-cyan-50 rounded-xl px-4 py-3.5 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all"
+              placeholder="you@company.com"
             />
           </div>
+
           <div>
+            <div className="flex justify-between items-center mb-1">
+              <label className="text-xs font-bold text-indigo-300 uppercase tracking-wider block">Password</label>
+              <span className="text-xs text-cyan-400 hover:text-cyan-300 cursor-pointer transition-colors font-medium">Forgot?</span>
+            </div>
             <input 
               type="password" 
-              placeholder="Password" 
               required 
-              className="w-full p-4 bg-slate-900/50 border border-white/10 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition text-white placeholder-slate-500"
-              onChange={(e) => setFormData({ ...formData, password: e.target.value })} 
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full bg-slate-900/60 border border-indigo-500/30 text-cyan-50 rounded-xl px-4 py-3.5 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all"
+              placeholder="••••••••"
             />
           </div>
-          
+
           <button 
             type="submit" 
-            className="w-full bg-indigo-600 text-white p-4 rounded-xl font-bold hover:bg-indigo-500 transition shadow-[0_0_20px_rgba(79,70,229,0.3)] mt-2"
+            disabled={isLoading}
+            className="w-full text-cyan-50 px-6 py-4 rounded-xl font-bold transition-all flex items-center justify-center gap-2 disabled:opacity-50 mt-4 bg-linear-to-r from-cyan-600 to-indigo-600 hover:shadow-[0_0_20px_rgba(34,211,238,0.4)]"
           >
-            Sign In
+            {isLoading ? (
+               <div className="flex items-center gap-2">
+                 <div className="w-4 h-4 border-2 border-cyan-50 border-t-transparent rounded-full animate-spin"></div>
+                 Authenticating...
+               </div>
+            ) : "Secure Login"}
           </button>
         </form>
-        
-        <p className="mt-8 text-center text-sm text-slate-400">
-          New here? <Link href="/register" className="text-indigo-400 font-semibold hover:text-indigo-300 transition">Create an account</Link>
+
+        <p className="text-center text-sm text-indigo-300/60 mt-6 font-medium">
+          Don&apos;t have an account? <Link href="/register" className="text-cyan-400 hover:text-cyan-300 transition-colors">Sign Up</Link>
         </p>
       </div>
     </div>

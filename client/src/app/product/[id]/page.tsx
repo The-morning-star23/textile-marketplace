@@ -347,7 +347,7 @@ export default function ProductDetailsPage() {
 
             {/* Description and Specs Tabs/Info */}
             <div className="flex flex-col gap-6">
-              <h2 className="text-2xl font-bold text-cyan-50 drop-shadow-md">Evaluating this Fabric</h2>
+              <h2 className="text-2xl font-bold text-cyan-50 drop-shadow-md">Description</h2>
               <p className="text-indigo-200/80 text-md leading-relaxed whitespace-pre-line">{product.description}</p>
               
               {/* Technical Specifications Grid */}

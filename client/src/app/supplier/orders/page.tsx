@@ -21,10 +21,12 @@ interface Order {
   createdAt: string;
 }
 
-const STATUS_OPTIONS = ["Pending", "Processing", "Shipped", "Delivered"];
+// Added 'Cancelled' to match the database schema
+const STATUS_OPTIONS = ["Pending", "Processing", "Shipped", "Delivered", "Cancelled"];
 
 export default function SupplierOrders() {
-  const auth = useContext(AuthContext);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const auth = useContext(AuthContext) as any;
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
@@ -70,7 +72,6 @@ export default function SupplierOrders() {
 
       if (res.ok) {
         const updatedOrder = await res.json();
-        // Update the order in our local state so the UI changes instantly
         setOrders(orders.map(order => order._id === orderId ? { ...order, status: updatedOrder.status } : order));
       }
     } catch (error) {
@@ -80,66 +81,72 @@ export default function SupplierOrders() {
     }
   };
 
-  // Helper function to pick the right color for the status badge
+  // Upgraded to neon dark-mode color scheme
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "Pending": return "bg-amber-100 text-amber-800 border-amber-200";
-      case "Processing": return "bg-blue-100 text-blue-800 border-blue-200";
-      case "Shipped": return "bg-purple-100 text-purple-800 border-purple-200";
-      case "Delivered": return "bg-emerald-100 text-emerald-800 border-emerald-200";
-      default: return "bg-slate-100 text-slate-800 border-slate-200";
+      case "Pending": return "bg-amber-500/10 text-amber-400 border-amber-500/30";
+      case "Processing": return "bg-cyan-500/10 text-cyan-400 border-cyan-500/30";
+      case "Shipped": return "bg-purple-500/10 text-purple-400 border-purple-500/30";
+      case "Delivered": return "bg-emerald-500/10 text-emerald-400 border-emerald-500/30";
+      case "Cancelled": return "bg-red-500/10 text-red-400 border-red-500/30";
+      default: return "bg-indigo-500/10 text-indigo-400 border-indigo-500/30";
     }
   };
 
   return (
-    <div className="max-w-6xl mx-auto">
+    <div className="max-w-6xl mx-auto p-6 md:p-10 font-sans w-full z-10 relative">
       <header className="mb-10">
-        <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight">Order Management</h1>
-        <p className="text-slate-500 mt-2 text-lg">Track customer orders, manage fulfillment, and update statuses.</p>
+        <h1 className="text-3xl font-extrabold text-cyan-50 tracking-tighter">Order Management</h1>
+        <p className="text-indigo-300/80 mt-1">Track customer orders, manage fulfillment, and update statuses.</p>
       </header>
 
       {loading ? (
-        <div className="text-center py-20 text-slate-500 font-medium animate-pulse">Loading your orders...</div>
+        <div className="text-center py-20 text-emerald-400/70 font-bold animate-pulse">
+          <div className="w-10 h-10 border-4 border-emerald-500/30 border-t-emerald-400 rounded-full animate-spin mx-auto mb-4"></div>
+          Syncing Orders...
+        </div>
       ) : orders.length === 0 ? (
-        <div className="text-center py-20 bg-slate-50/80 backdrop-blur-sm rounded-3xl border border-slate-200/60 shadow-sm flex flex-col items-center">
-          <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4">
-            <svg className="w-8 h-8 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+        <div className="text-center py-20 bg-[#0B1120]/60 backdrop-blur-md rounded-3xl border border-indigo-500/20 shadow-xl flex flex-col items-center">
+          <div className="w-20 h-20 bg-emerald-500/10 rounded-full flex items-center justify-center mb-6 border border-emerald-500/20">
+            <svg className="w-10 h-10 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
             </svg>
           </div>
-          <h2 className="text-xl font-bold text-slate-900">No orders yet</h2>
-          <p className="text-slate-500 mt-2">When buyers place orders for your fabrics, they will appear here.</p>
+          <h2 className="text-2xl font-bold text-cyan-50">No orders yet</h2>
+          <p className="text-indigo-300/80 mt-2 max-w-sm">When buyers purchase your fabrics, their fulfillment requests will appear here.</p>
         </div>
       ) : (
         <div className="space-y-6">
           {orders.map((order) => (
-            <div key={order._id} className="bg-slate-50/80 backdrop-blur-md rounded-2xl border border-slate-200/60 p-6 shadow-sm hover:shadow-md transition-shadow">
+            <div key={order._id} className="bg-[#0B1120]/60 backdrop-blur-xl rounded-3xl border border-indigo-500/20 p-6 md:p-8 shadow-xl hover:border-emerald-500/40 transition-colors group">
               
               {/* Order Header */}
-              <div className="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-slate-200/80 pb-4 mb-4 gap-4">
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-indigo-500/20 pb-6 mb-6 gap-4">
                 <div>
-                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Order #{order._id.slice(-8)}</p>
-                  <p className="text-sm text-slate-500 font-medium">{new Date(order.createdAt).toLocaleDateString()}  {new Date(order.createdAt).toLocaleTimeString()}</p>
+                  <p className="text-xs font-bold text-indigo-400/60 uppercase tracking-widest mb-1 flex items-center gap-2">
+                    Order <span className="text-cyan-400">#{order._id.slice(-8).toUpperCase()}</span>
+                  </p>
+                  <p className="text-sm text-indigo-300/80 font-medium">{new Date(order.createdAt).toLocaleDateString()} &nbsp;&bull;&nbsp; {new Date(order.createdAt).toLocaleTimeString()}</p>
                 </div>
                 
                 {/* Status Update Control */}
                 <div className="flex items-center gap-3 w-full md:w-auto">
-                  <span className="text-sm font-semibold text-slate-600">Status:</span>
+                  <span className="text-xs font-bold text-indigo-300 uppercase tracking-widest">Status:</span>
                   <div className="relative flex-1 md:flex-none">
                     <select
                       value={order.status}
                       disabled={updatingId === order._id}
                       onChange={(e) => handleStatusChange(order._id, e.target.value)}
-                      className={`appearance-none w-full md:w-40 pl-4 pr-10 py-2 rounded-xl text-sm font-bold outline-none cursor-pointer border transition-colors ${getStatusColor(order.status)} ${updatingId === order._id ? 'opacity-50' : ''}`}
+                      className={`appearance-none w-full md:w-44 pl-4 pr-10 py-2.5 rounded-xl text-sm font-bold outline-none cursor-pointer border transition-colors focus:ring-2 focus:ring-emerald-400/50 ${getStatusColor(order.status)} ${updatingId === order._id ? 'opacity-50 grayscale' : ''}`}
                     >
                       {STATUS_OPTIONS.map((status) => (
-                        <option key={status} value={status} className="bg-white text-slate-900">{status}</option>
+                        <option key={status} value={status} className="bg-[#080C17] text-cyan-50">{status}</option>
                       ))}
                     </select>
                     {/* Custom Dropdown Arrow */}
-                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-current opacity-60">
+                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-current opacity-80">
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
                       </svg>
                     </div>
                   </div>
@@ -147,33 +154,42 @@ export default function SupplierOrders() {
               </div>
 
               {/* Order Body */}
-              <div className="flex flex-col md:flex-row gap-6">
+              <div className="flex flex-col md:flex-row gap-8">
                 
                 {/* Product Info Thumbnail */}
-                <div className="flex gap-4 md:w-1/2">
-                  <div className="w-20 h-20 bg-slate-200 rounded-xl overflow-hidden shrink-0 border border-slate-200/80">
+                <div className="flex gap-5 md:w-1/2">
+                  <div className="w-24 h-24 bg-slate-900 rounded-2xl overflow-hidden shrink-0 border border-indigo-500/30">
                     {order.product?.images && order.product.images.length > 0 ? (
                       <img src={order.product.images[0]} alt="Product" className="w-full h-full object-cover" />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center text-[10px] text-slate-400 font-bold uppercase text-center p-2">No Image</div>
+                      <div className="w-full h-full flex items-center justify-center text-[10px] text-indigo-400/50 font-bold uppercase text-center p-2">No Image</div>
                     )}
                   </div>
-                  <div>
-                    <h3 className="font-extrabold text-slate-900 text-lg">{order.product?.title || "Product Unavailable"}</h3>
-                    <p className="text-sm text-slate-600 font-medium mt-1">Qty: {order.quantity} meters</p>
-                    <p className="text-lg font-extrabold text-emerald-600 mt-1">${order.totalPrice.toFixed(2)}</p>
+                  <div className="flex flex-col justify-center">
+                    <h3 className="font-extrabold text-cyan-50 text-lg line-clamp-1">{order.product?.title || "Product Unavailable"}</h3>
+                    <p className="text-sm text-indigo-300/80 font-medium mt-1">Qty: <span className="text-cyan-400">{order.quantity} m</span></p>
+                    <p className="text-xl font-extrabold text-emerald-400 mt-2">${order.totalPrice.toFixed(2)}</p>
                   </div>
                 </div>
 
                 {/* Buyer Info */}
-                <div className="md:w-1/2 bg-white/60 rounded-xl p-4 border border-slate-200/60">
-                  <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Shipping Details</h4>
-                  <div className="space-y-2 text-sm">
-                    <p><span className="font-semibold text-slate-700">Buyer:</span> <span className="text-slate-600">{order.buyer?.name}</span></p>
-                    <p><span className="font-semibold text-slate-700">Email:</span> <a href={`mailto:${order.buyer?.email}`} className="text-indigo-600 hover:underline">{order.buyer?.email}</a></p>
-                    <div className="flex items-start gap-1">
-                      <span className="font-semibold text-slate-700">Address:</span> 
-                      <span className="text-slate-600 flex-1">{order.shippingAddress}</span>
+                <div className="md:w-1/2 bg-indigo-950/40 rounded-2xl p-5 border border-indigo-500/30">
+                  <h4 className="text-xs font-bold text-emerald-400/70 uppercase tracking-widest mb-3 flex items-center gap-2">
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                    Shipping Details
+                  </h4>
+                  <div className="space-y-2.5 text-sm">
+                    <p className="flex items-center gap-2">
+                      <span className="font-bold text-indigo-300 w-16">Buyer:</span> 
+                      <span className="text-cyan-50 font-bold">{order.buyer?.name || "Unknown Buyer"}</span>
+                    </p>
+                    <p className="flex items-center gap-2">
+                      <span className="font-bold text-indigo-300 w-16">Email:</span> 
+                      <a href={`mailto:${order.buyer?.email}`} className="text-cyan-400 hover:text-cyan-300 transition-colors">{order.buyer?.email || "N/A"}</a>
+                    </p>
+                    <div className="flex items-start gap-2 pt-1">
+                      <span className="font-bold text-indigo-300 w-16 mt-0.5">Address:</span> 
+                      <span className="text-indigo-200/90 flex-1 leading-relaxed">{order.shippingAddress}</span>
                     </div>
                   </div>
                 </div>

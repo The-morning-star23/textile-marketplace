@@ -3,16 +3,39 @@ const Order = require('../models/Order');
 const { verifyToken } = require('../middleware/authMiddleware');
 const router = express.Router();
 
-// CREATE: Place a new order (Buyer)
+// CREATE: Place a new order (Buyer Checkout)
 router.post('/', verifyToken, async (req, res) => {
   try {
-    const { buyer, supplier, product, quantity, totalPrice, shippingAddress } = req.body;
-    const newOrder = new Order({
-      buyer, supplier, product, quantity, totalPrice, shippingAddress
-    });
-    const savedOrder = await newOrder.save();
-    res.status(201).json(savedOrder);
+    const { items, shippingAddress } = req.body;
+    
+    // Securely get the buyer ID from the verified token
+    const buyerId = req.user.id || req.user._id;
+
+    if (!items || items.length === 0) {
+      return res.status(400).json({ error: "No items in cart" });
+    }
+
+    const createdOrders = [];
+
+    // Loop through the cart items and create an independent order for each
+    for (const item of items) {
+      const newOrder = new Order({
+        buyer: buyerId,
+        supplier: item.supplierId,
+        product: item.productId,
+        quantity: item.quantity,
+        totalPrice: item.price * item.quantity, // Calculate item subtotal
+        shippingAddress: shippingAddress,
+        status: 'Pending' // Matching our new Title Case schema
+      });
+      
+      const savedOrder = await newOrder.save();
+      createdOrders.push(savedOrder);
+    }
+
+    res.status(201).json({ message: "Orders placed successfully", orders: createdOrders });
   } catch (error) {
+    console.error("Checkout Error:", error);
     res.status(500).json({ error: "Failed to place order" });
   }
 });
@@ -35,7 +58,7 @@ router.get('/supplier/:supplierId', verifyToken, async (req, res) => {
   try {
     const orders = await Order.find({ supplier: req.params.supplierId })
       .populate('product')
-      .populate('buyer', 'name email') // Fetch the buyer's contact info!
+      .populate('buyer', 'name email') // Fetch the buyer's contact info
       .sort({ createdAt: -1 });
     res.status(200).json(orders);
   } catch (error) {
