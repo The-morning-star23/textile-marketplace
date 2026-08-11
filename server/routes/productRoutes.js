@@ -15,7 +15,8 @@ router.post('/', verifyToken, async (req, res) => {
       price, 
       moq, 
       supplier,
-      images: images || []
+      images: images || [],
+      inStock: true // default new products to in-stock
     });
     
     const savedProduct = await newProduct.save();
@@ -55,6 +56,56 @@ router.get('/:id', async (req, res) => {
     res.status(200).json(product);
   } catch (error) {
     res.status(500).json({ error: "Failed to fetch product" });
+  }
+});
+
+// ==========================================
+// NEW ROUTES FOR INVENTORY MANAGEMENT
+// ==========================================
+
+// UPDATE: Edit a full product (PROTECTED)
+router.put('/:id', verifyToken, async (req, res) => {
+  try {
+    const updatedProduct = await Product.findByIdAndUpdate(
+      req.params.id,
+      { $set: req.body },
+      { returnDocument: 'after' } // Returns the updated document
+    );
+    
+    if (!updatedProduct) return res.status(404).json({ error: "Product not found" });
+    res.status(200).json(updatedProduct);
+  } catch (error) {
+    res.status(500).json({ error: "Failed to update product" });
+  }
+});
+
+// UPDATE: Toggle In-Stock status (PROTECTED)
+router.patch('/:id', verifyToken, async (req, res) => {
+  try {
+    const { inStock } = req.body;
+    
+    const updatedProduct = await Product.findByIdAndUpdate(
+      req.params.id,
+      { inStock },
+      { returnDocument: 'after' }
+    );
+    
+    if (!updatedProduct) return res.status(404).json({ error: "Product not found" });
+    res.status(200).json(updatedProduct);
+  } catch (error) {
+    res.status(500).json({ error: "Failed to update stock status" });
+  }
+});
+
+// DELETE: Remove a product (PROTECTED)
+router.delete('/:id', verifyToken, async (req, res) => {
+  try {
+    const deletedProduct = await Product.findByIdAndDelete(req.params.id);
+    
+    if (!deletedProduct) return res.status(404).json({ error: "Product not found" });
+    res.status(200).json({ message: "Product successfully deleted" });
+  } catch (error) {
+    res.status(500).json({ error: "Failed to delete product" });
   }
 });
 

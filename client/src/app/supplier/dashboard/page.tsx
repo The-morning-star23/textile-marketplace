@@ -1,14 +1,46 @@
 "use client";
 
-import { useContext } from "react";
+import { useContext, useEffect, useState } from "react";
 import Link from "next/link";
 import { AuthContext } from "../../../context/AuthContext";
 
 export default function SupplierDashboard() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const auth = useContext(AuthContext) as any;
+  
+  // State for real database metrics
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [products, setProducts] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Mock data for the Recent Orders widget
+  // Fetch real product data when the dashboard loads
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      // Wait for auth to load
+      if (!auth?.user?._id) return; 
+      
+      try {
+        const res = await fetch(`http://localhost:5000/api/products/supplier/${auth.user._id}`);
+        if (res.ok) {
+          const data = await res.json();
+          setProducts(data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch dashboard data:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, [auth?.user?._id]);
+
+  // Calculate live metrics
+  const totalProducts = products.length;
+  const activeProducts = products.filter(p => p.inStock !== false).length;
+  const inventoryAlerts = products.filter(p => p.inStock === false).length;
+
+  // Mock data for the Recent Orders widget (until we test buyer flows!)
   const recentOrders = [
     { id: "ORD-9021", buyer: "Horizon Apparel", date: "Today, 10:30 AM", status: "Pending", total: "$3,450" },
     { id: "ORD-9020", buyer: "Luxe Threads Co.", date: "Yesterday", status: "Processing", total: "$1,200" },
@@ -29,14 +61,14 @@ export default function SupplierDashboard() {
           className="bg-linear-to-r from-emerald-600 to-cyan-600 text-cyan-50 px-6 py-3 rounded-xl font-bold hover:shadow-[0_0_20px_rgba(16,185,129,0.4)] transition-all flex items-center gap-2 w-fit"
         >
           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 4v16m8-8H4" /></svg>
-          List New Fabric
+          Add New Product
         </Link>
       </header>
 
-      {/* TOP METRICS ROW (Covers: Pending Orders, Active Products, Total Products, Inventory Alerts) */}
+      {/* TOP METRICS ROW */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
         
-        {/* Widget 1: Pending Orders */}
+        {/* Widget 1: Pending Orders (Mock for now) */}
         <div className="bg-[#0B1120]/60 backdrop-blur-md rounded-3xl border border-indigo-500/20 p-6 shadow-xl relative overflow-hidden group hover:border-cyan-500/50 transition-colors">
           <div className="absolute top-0 right-0 w-24 h-24 bg-cyan-500/10 rounded-full blur-[30px] group-hover:bg-cyan-500/20 transition-colors"></div>
           <div className="flex justify-between items-start mb-2">
@@ -51,7 +83,7 @@ export default function SupplierDashboard() {
           </p>
         </div>
 
-        {/* Widget 2: Active Products */}
+        {/* Widget 2: Active Products (REAL DATA) */}
         <div className="bg-[#0B1120]/60 backdrop-blur-md rounded-3xl border border-indigo-500/20 p-6 shadow-xl relative overflow-hidden group hover:border-emerald-500/50 transition-colors">
           <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/10 rounded-full blur-[30px] group-hover:bg-emerald-500/20 transition-colors"></div>
           <div className="flex justify-between items-start mb-2">
@@ -60,13 +92,15 @@ export default function SupplierDashboard() {
             </div>
           </div>
           <h3 className="text-indigo-300 text-sm font-bold uppercase tracking-wider mb-1">Active Products</h3>
-          <div className="text-3xl font-extrabold text-cyan-50">24</div>
+          <div className="text-3xl font-extrabold text-cyan-50">
+            {isLoading ? "..." : activeProducts}
+          </div>
           <p className="text-xs font-bold text-emerald-400 mt-2 flex items-center gap-1">
             Live on marketplace
           </p>
         </div>
 
-        {/* Widget 3: Total Products */}
+        {/* Widget 3: Total Products (REAL DATA) */}
         <div className="bg-[#0B1120]/60 backdrop-blur-md rounded-3xl border border-indigo-500/20 p-6 shadow-xl relative overflow-hidden group hover:border-purple-500/50 transition-colors">
           <div className="absolute top-0 right-0 w-24 h-24 bg-purple-500/10 rounded-full blur-[30px] group-hover:bg-purple-500/20 transition-colors"></div>
           <div className="flex justify-between items-start mb-2">
@@ -75,13 +109,15 @@ export default function SupplierDashboard() {
             </div>
           </div>
           <h3 className="text-indigo-300 text-sm font-bold uppercase tracking-wider mb-1">Total Products</h3>
-          <div className="text-3xl font-extrabold text-cyan-50">28</div>
+          <div className="text-3xl font-extrabold text-cyan-50">
+            {isLoading ? "..." : totalProducts}
+          </div>
           <p className="text-xs font-bold text-indigo-400 mt-2 flex items-center gap-1">
             Including drafts/offline
           </p>
         </div>
 
-        {/* Widget 4: Inventory Alerts */}
+        {/* Widget 4: Inventory Alerts (REAL DATA) */}
         <div className="bg-red-950/20 backdrop-blur-md rounded-3xl border border-red-500/30 p-6 shadow-xl relative overflow-hidden group hover:border-red-500/60 transition-colors">
           <div className="absolute top-0 right-0 w-24 h-24 bg-red-500/10 rounded-full blur-[30px] group-hover:bg-red-500/20 transition-colors"></div>
           <div className="flex justify-between items-start mb-2">
@@ -90,7 +126,9 @@ export default function SupplierDashboard() {
             </div>
           </div>
           <h3 className="text-red-300 text-sm font-bold uppercase tracking-wider mb-1">Inventory Alerts</h3>
-          <div className="text-3xl font-extrabold text-red-400">3</div>
+          <div className="text-3xl font-extrabold text-red-400">
+            {isLoading ? "..." : inventoryAlerts}
+          </div>
           <p className="text-xs font-bold text-red-400/80 mt-2 flex items-center gap-1">
             Items low on stock
           </p>

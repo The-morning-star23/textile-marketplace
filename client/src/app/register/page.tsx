@@ -37,7 +37,8 @@ export default function RegisterPage() {
 
       // Log the user in via AuthContext
       if (auth?.login) {
-        auth.login(data.token, data.user);
+        // FIX: Swapped arguments to match Context (User Object FIRST, Token String SECOND)
+        auth.login(data.user, data.token);
       } else {
         localStorage.setItem("token", data.token);
         localStorage.setItem("user", JSON.stringify(data.user));
@@ -47,7 +48,7 @@ export default function RegisterPage() {
       if (role === "supplier") {
         router.push("/supplier/onboarding");
       } else {
-        router.push("/buyer/dashboard");
+        router.push("/buyer/onboarding");
       }
       
     } catch (err: any) {

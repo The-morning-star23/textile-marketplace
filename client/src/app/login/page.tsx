@@ -35,7 +35,8 @@ export default function LoginPage() {
 
       // Log the user in via AuthContext
       if (auth?.login) {
-        auth.login(data.token, data.user);
+        // FIX: Swapped arguments to match Context (User Object FIRST, Token String SECOND)
+        auth.login(data.user, data.token);
       } else {
         localStorage.setItem("token", data.token);
         localStorage.setItem("user", JSON.stringify(data.user));

@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
 import { useState, useEffect, useContext } from "react";
@@ -5,6 +6,13 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { AuthContext } from "../../../context/AuthContext";
 import { CartContext } from "../../../context/CartContext";
+
+// Upgraded Interface to match the new Variant Database Schema
+interface ColorVariant {
+  name: string;
+  hexCode: string;
+  imageUrl?: string;
+}
 
 interface Product {
   _id: string;
@@ -17,7 +25,7 @@ interface Product {
     _id?: string;
     name: string;
   };
-  availableColors: string[];
+  availableColors: ColorVariant[]; 
   specifications: {
     width: string;
     weight: string;
@@ -40,13 +48,24 @@ export default function ProductDetailsPage() {
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedImage, setSelectedImage] = useState<string>("");
-  const [quantity, setQuantity] = useState(1);
   
-  // Search State
+  // Hydration fix state
+  const [isMounted, setIsMounted] = useState(false);
+  
+  // Display States
+  const [selectedImage, setSelectedImage] = useState<string>("");
+  const [selectedColor, setSelectedColor] = useState<ColorVariant | null>(null);
+  
+  // Quantity can temporarily be a string while the user is typing
+  const [quantity, setQuantity] = useState<number | string>(1);
+  
   const [searchQuery, setSearchQuery] = useState("");
-
   const isLoggedIn = auth?.token || (typeof window !== "undefined" && localStorage.getItem("token"));
+
+  // Set isMounted to true once the component has mounted in the browser
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -54,14 +73,23 @@ export default function ProductDetailsPage() {
         const res = await fetch(`http://localhost:5000/api/products/${productId}`);
         if (!res.ok) throw new Error("Failed to load product.");
         const data = await res.json();
+        
         setProduct(data);
+        
         if (data.images && data.images.length > 0) {
           setSelectedImage(data.images[0]);
         }
-        // Set default quantity to MOQ
-        if (data.moq) {
-          setQuantity(data.moq);
+        
+        // Auto-select the first color if variants exist
+        if (data.availableColors && data.availableColors.length > 0) {
+          setSelectedColor(data.availableColors[0]);
+          if (data.availableColors[0].imageUrl) {
+            setSelectedImage(data.availableColors[0].imageUrl);
+          }
         }
+
+        if (data.moq) setQuantity(data.moq);
+        
       } catch (err) {
         console.error("Fetch Product Error:", err);
         setError("This fabric is currently unavailable. The inventory might be outdated.");
@@ -73,7 +101,29 @@ export default function ProductDetailsPage() {
     if (productId) fetchProduct();
   }, [productId]);
 
-  // Search Handler
+  // --- SMART QUANTITY HANDLERS ---
+  const handleQuantityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Allow the user to clear the box while typing
+    if (e.target.value === "") {
+      setQuantity("");
+      return;
+    }
+    const val = parseInt(e.target.value);
+    if (!isNaN(val)) setQuantity(val);
+  };
+
+  const handleQuantityBlur = () => {
+    // When the user clicks outside the box, enforce the limits!
+    const min = product?.moq || 1;
+    const max = product?.availableStock || 0;
+    
+    let finalQty = Number(quantity);
+    if (isNaN(finalQty) || finalQty < min) finalQty = min;
+    if (finalQty > max) finalQty = max;
+    
+    setQuantity(finalQty);
+  };
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
@@ -120,7 +170,7 @@ export default function ProductDetailsPage() {
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#6366f10a_1px,transparent_1px),linear-gradient(to_bottom,#6366f10a_1px,transparent_1px)] bg-size-[4rem_4rem]"></div>
       </div>
 
-      {/* Smart Navbar (Consistent Dark Theme) */}
+      {/* Smart Navbar */}
       <nav className="relative z-50 w-full backdrop-blur-2xl bg-[#0B1120]/80 border-b border-indigo-500/20 shadow-xl">
         <div className="max-w-7xl mx-auto px-6 h-20 flex justify-between items-center">
           
@@ -149,59 +199,61 @@ export default function ProductDetailsPage() {
             </button>
           </form>
 
-          {/* UNIFIED NAVIGATION BUTTONS */}
+          {/* Navigation Buttons */}
           <div className="flex items-center gap-4">
-            {isLoggedIn ? (
-              <>
-                <Link 
-                  href="/buyer/dashboard"
-                  className="hidden sm:flex items-center gap-2 px-4 py-2 bg-indigo-900/40 border border-indigo-500/30 rounded-xl text-indigo-200 hover:text-cyan-400 hover:border-cyan-400/50 transition-all group text-sm font-bold"
-                >
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-                  </svg>
-                  Dashboard
-                </Link>
-                
-                <Link 
-                  href="/buyer/cart"
-                  className="relative flex items-center gap-2 px-4 py-2 bg-indigo-900/40 border border-indigo-500/30 rounded-xl text-indigo-200 hover:text-cyan-400 hover:border-cyan-400/50 transition-all group text-sm font-bold"
-                >
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-                  </svg>
-                  Cart
+            {/* HYDRATION FIX: Only render after mounting */}
+            {isMounted && (
+              isLoggedIn ? (
+                <>
+                  <Link 
+                    href="/buyer/dashboard"
+                    className="hidden sm:flex items-center gap-2 px-4 py-2 bg-indigo-900/40 border border-indigo-500/30 rounded-xl text-indigo-200 hover:text-cyan-400 hover:border-cyan-400/50 transition-all group text-sm font-bold"
+                  >
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                    </svg>
+                    Dashboard
+                  </Link>
                   
-                  {/* Active Notification Badge */}
-                  {cartContext?.itemCount > 0 && (
-                    <span className="absolute -top-2 -right-2 flex h-5 w-5">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-5 w-5 bg-cyan-500 border-2 border-[#0B1120] text-[9px] items-center justify-center font-extrabold text-[#0B1120]">
-                        {cartContext.itemCount}
+                  <Link 
+                    href="/buyer/cart"
+                    className="relative flex items-center gap-2 px-4 py-2 bg-indigo-900/40 border border-indigo-500/30 rounded-xl text-indigo-200 hover:text-cyan-400 hover:border-cyan-400/50 transition-all group text-sm font-bold"
+                  >
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                    Cart
+                    
+                    {cartContext?.itemCount > 0 && (
+                      <span className="absolute -top-2 -right-2 flex h-5 w-5">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-5 w-5 bg-cyan-500 border-2 border-[#0B1120] text-[9px] items-center justify-center font-extrabold text-[#0B1120]">
+                          {cartContext.itemCount}
+                        </span>
                       </span>
-                    </span>
-                  )}
-                </Link>
+                    )}
+                  </Link>
 
-                <button 
-                  onClick={() => auth?.logout?.()}
-                  className="flex items-center gap-2 px-4 py-2 bg-red-900/10 border border-red-500/20 rounded-xl text-red-400 hover:text-red-300 hover:bg-red-500/20 hover:border-red-400/50 transition-all group text-sm font-bold ml-2"
-                >
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                  </svg>
-                  Log out
-                </button>
-              </>
-            ) : (
-              <>
-                <Link href="/login" className="text-sm font-semibold text-indigo-200 hover:text-cyan-100 transition px-4 py-2">
-                  Log in
-                </Link>
-                <Link href="/register" className="text-sm font-semibold bg-linear-to-r from-cyan-500 to-indigo-500 text-cyan-50 px-5 py-2.5 rounded-xl hover:shadow-[0_0_20px_rgba(34,211,238,0.4)] transition-all">
-                  Sign Up
-                </Link>
-              </>
+                  <button 
+                    onClick={() => auth?.logout?.()}
+                    className="flex items-center gap-2 px-4 py-2 bg-red-900/10 border border-red-500/20 rounded-xl text-red-400 hover:text-red-300 hover:bg-red-500/20 hover:border-red-400/50 transition-all group text-sm font-bold ml-2"
+                  >
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    </svg>
+                    Log out
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Link href="/login" className="text-sm font-semibold text-indigo-200 hover:text-cyan-100 transition px-4 py-2">
+                    Log in
+                  </Link>
+                  <Link href="/register" className="text-sm font-semibold bg-linear-to-r from-cyan-500 to-indigo-500 text-cyan-50 px-5 py-2.5 rounded-xl hover:shadow-[0_0_20px_rgba(34,211,238,0.4)] transition-all">
+                    Sign Up
+                  </Link>
+                </>
+              )
             )}
           </div>
         </div>
@@ -226,7 +278,7 @@ export default function ProductDetailsPage() {
           
           {/* Left Column: Image Gallery */}
           <div className="flex flex-col gap-6">
-            <div className="aspect-4/3 bg-[#0B1120]/50 border border-indigo-500/20 backdrop-blur-md rounded-3xl p-4 shadow-xl relative overflow-hidden group">
+            <div className="aspect-4/3 bg-[#0B1120]/50 border border-indigo-500/20 backdrop-blur-md rounded-3xl p-4 shadow-xl relative overflow-hidden group flex items-center justify-center">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img 
                 src={selectedImage || "https://placehold.co/600x450/0f172a/38bdf8?text=No+Image"} 
@@ -235,21 +287,35 @@ export default function ProductDetailsPage() {
               />
             </div>
             
-            {/* Thumbnails */}
-            {product.images.length > 1 && (
-              <div className="grid grid-cols-5 gap-4">
-                {product.images.map((img) => (
-                  <div 
-                    key={img} 
-                    onClick={() => setSelectedImage(img)}
-                    className={`aspect-square cursor-pointer rounded-xl border-2 transition-all duration-300 overflow-hidden p-1 ${selectedImage === img ? 'border-cyan-400 bg-indigo-900/30 shadow-[0_0_15px_rgba(34,211,238,0.3)]' : 'border-transparent hover:border-indigo-500/50 bg-[#0B1120]/50'}`}
-                  >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={img} alt="Thumbnail" className="w-full h-full object-cover rounded-lg" />
-                  </div>
-                ))}
-              </div>
-            )}
+            {/* Thumbnails (Combines main images and color variant images) */}
+            <div className="grid grid-cols-5 gap-4">
+              {product.images?.map((img) => (
+                <div 
+                  key={img} 
+                  onClick={() => setSelectedImage(img)}
+                  className={`aspect-square cursor-pointer rounded-xl border-2 transition-all duration-300 overflow-hidden p-1 ${selectedImage === img ? 'border-cyan-400 bg-indigo-900/30 shadow-[0_0_15px_rgba(34,211,238,0.3)]' : 'border-transparent hover:border-indigo-500/50 bg-[#0B1120]/50'}`}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={img} alt="Thumbnail" className="w-full h-full object-cover rounded-lg" />
+                </div>
+              ))}
+              
+              {/* Show variant thumbnails if they have images */}
+              {product.availableColors?.filter(c => c.imageUrl).map((color, idx) => (
+                <div 
+                  key={`var-${idx}`} 
+                  onClick={() => {
+                    setSelectedImage(color.imageUrl!);
+                    setSelectedColor(color);
+                  }}
+                  className={`aspect-square cursor-pointer rounded-xl border-2 transition-all duration-300 overflow-hidden p-1 ${selectedImage === color.imageUrl ? 'border-cyan-400 bg-indigo-900/30 shadow-[0_0_15px_rgba(34,211,238,0.3)]' : 'border-transparent hover:border-indigo-500/50 bg-[#0B1120]/50'}`}
+                  title={color.name}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={color.imageUrl} alt={color.name} className="w-full h-full object-cover rounded-lg" />
+                </div>
+              ))}
+            </div>
           </div>
 
           {/* Right Column: Product Information & Action Panel */}
@@ -280,21 +346,61 @@ export default function ProductDetailsPage() {
                   </div>
               </div>
               
-              {/* Quantity Selector */}
+              {/* SMART COLOR PICKER */}
+              {product.availableColors && product.availableColors.length > 0 && (
+                  <div className="mb-6 border-t border-indigo-500/20 pt-6">
+                      <div className="flex justify-between items-center mb-3">
+                        <span className="text-sm font-bold text-cyan-50">Select Color</span>
+                        <span className="text-xs font-bold text-cyan-400 capitalize">{selectedColor?.name || "None Selected"}</span>
+                      </div>
+                      <div className="flex items-center gap-3 flex-wrap">
+                          {product.availableColors.map((color, idx) => (
+                              <button 
+                                  key={idx}
+                                  onClick={() => {
+                                    setSelectedColor(color);
+                                    if (color.imageUrl) setSelectedImage(color.imageUrl);
+                                  }}
+                                  className={`flex items-center gap-2 px-3 py-2 rounded-xl border transition-all duration-300 ${selectedColor?.name === color.name ? 'border-cyan-400 bg-indigo-900/40 shadow-[0_0_15px_rgba(34,211,238,0.3)]' : 'border-indigo-500/30 bg-[#0B1120] hover:border-indigo-400'}`}
+                                  title={color.name}
+                              >
+                                  <span 
+                                    className="w-5 h-5 rounded-full border-2 border-[#0B1120] shadow-[0_0_0_1px_rgba(99,102,241,0.5)]" 
+                                    style={{ backgroundColor: color.hexCode || '#ccc' }}
+                                  ></span>
+                                  <span className={`text-xs font-bold capitalize ${selectedColor?.name === color.name ? 'text-cyan-50' : 'text-indigo-300'}`}>
+                                    {color.name}
+                                  </span>
+                              </button>
+                          ))}
+                      </div>
+                  </div>
+              )}
+
+              {/* SMART QUANTITY SELECTOR (Type or Click) */}
               {product.availableStock > 0 && (
                   <div className="mb-8 border-t border-b border-indigo-500/20 py-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <label className="text-lg font-bold text-cyan-50">Order Amount (meters)</label>
-                    <div className="flex items-center gap-2 bg-indigo-950/50 rounded-full p-1 border border-indigo-500/30 max-w-50 w-full justify-between">
+                    <div className="flex items-center gap-2 bg-indigo-950/50 rounded-full p-1 border border-indigo-500/30 max-w-50 w-full justify-between overflow-hidden">
                       <button 
-                        onClick={() => setQuantity(q => Math.max(product.moq || 1, q - 1))}
-                        className="w-10 h-10 rounded-full bg-indigo-900/50 text-cyan-50 font-bold flex items-center justify-center hover:bg-indigo-800 transition border border-indigo-500/30 disabled:opacity-30"
-                        disabled={quantity <= (product.moq || 1)}
+                        onClick={() => setQuantity(q => Math.max(product.moq || 1, Number(q) - 1))}
+                        className="w-10 h-10 shrink-0 rounded-full bg-indigo-900/80 text-cyan-50 font-bold flex items-center justify-center hover:bg-indigo-800 transition border border-indigo-500/30 disabled:opacity-30"
+                        disabled={Number(quantity) <= (product.moq || 1)}
                       >—</button>
-                      <span className="text-xl font-extrabold text-cyan-50 px-4">{quantity}</span>
+                      
+                      {/* Input where buyer can type directly! */}
+                      <input 
+                        type="number" 
+                        value={quantity}
+                        onChange={handleQuantityChange}
+                        onBlur={handleQuantityBlur}
+                        className="w-full bg-transparent text-center text-xl font-extrabold text-cyan-50 outline-none appearance-none"
+                      />
+                      
                       <button 
-                        onClick={() => setQuantity(q => Math.min(product.availableStock, q + 1))}
-                        className="w-10 h-10 rounded-full bg-indigo-900/50 text-cyan-50 font-bold flex items-center justify-center hover:bg-indigo-800 transition border border-indigo-500/30 disabled:opacity-30"
-                        disabled={quantity >= product.availableStock}
+                        onClick={() => setQuantity(q => Math.min(product.availableStock, Number(q) + 1))}
+                        className="w-10 h-10 shrink-0 rounded-full bg-indigo-900/80 text-cyan-50 font-bold flex items-center justify-center hover:bg-indigo-800 transition border border-indigo-500/30 disabled:opacity-30"
+                        disabled={Number(quantity) >= product.availableStock}
                       >+</button>
                     </div>
                   </div>
@@ -310,11 +416,12 @@ export default function ProductDetailsPage() {
                       return;
                     }
                     if (cartContext && product) {
+                      // Passing the selected color to the cart!
                       cartContext.addToCart({
                         productId: product._id,
-                        title: product.title,
+                        title: `${product.title} ${selectedColor ? `(${selectedColor.name})` : ''}`,
                         price: product.price,
-                        quantity: quantity,
+                        quantity: Number(quantity),
                         image: selectedImage,
                         supplierId: product.supplier?._id || "unknown",
                         moq: product.moq || 1
@@ -335,7 +442,7 @@ export default function ProductDetailsPage() {
                     if (!isLoggedIn) {
                       router.push("/login");
                     } else {
-                      alert("Sample request sent to supplier!");
+                      alert(`Sample request sent to supplier for ${selectedColor?.name || 'this fabric'}!`);
                     }
                   }}
                   className="bg-indigo-900/40 text-cyan-100 border border-indigo-500/30 px-8 py-5 rounded-2xl text-lg font-bold hover:bg-indigo-800/50 hover:border-cyan-400/50 transition-all duration-300 flex items-center justify-center gap-3 backdrop-blur-md"
@@ -345,12 +452,11 @@ export default function ProductDetailsPage() {
               </div>
             </div>
 
-            {/* Description and Specs Tabs/Info */}
+            {/* Description and Specs */}
             <div className="flex flex-col gap-6">
               <h2 className="text-2xl font-bold text-cyan-50 drop-shadow-md">Description</h2>
               <p className="text-indigo-200/80 text-md leading-relaxed whitespace-pre-line">{product.description}</p>
               
-              {/* Technical Specifications Grid */}
               <div className="grid grid-cols-3 gap-6 bg-[#0B1120]/40 p-6 rounded-2xl border border-indigo-500/20 mt-4 backdrop-blur-sm">
                   <div className="flex flex-col">
                       <span className="text-xs font-bold uppercase tracking-wider text-indigo-400/70 mb-1">Width</span>
@@ -365,20 +471,6 @@ export default function ProductDetailsPage() {
                       <span className="text-sm font-bold text-cyan-50 capitalize">{product.specifications?.composition || 'N/A'}</span>
                   </div>
               </div>
-              
-              {/* Available Colors */}
-              {product.availableColors && product.availableColors.length > 0 && (
-                  <div className="mt-2">
-                      <span className="text-sm font-bold text-indigo-300 mb-3 block">Available Color Palette</span>
-                      <div className="flex items-center gap-2 flex-wrap">
-                          {product.availableColors.map(color => (
-                              <span key={color} className="text-xs font-bold bg-indigo-950/60 border border-indigo-500/30 text-cyan-100 px-4 py-2 rounded-full shadow-sm capitalize">
-                                  {color}
-                              </span>
-                          ))}
-                      </div>
-                  </div>
-              )}
             </div>
           </div>
         </div>
@@ -397,7 +489,6 @@ export default function ProductDetailsPage() {
           </div>
         </div>
       </footer>
-
     </div>
   );
 }

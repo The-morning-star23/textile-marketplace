@@ -8,6 +8,20 @@ const userSchema = new mongoose.Schema({
   role: { type: String, enum: ['buyer', 'supplier'], required: true },
   isOnboarded: { type: Boolean, default: false },
   preferences: { type: Object, default: {} },
+  
+  // Required Supplier Fields
+  businessName: { type: String, default: "" },
+  businessType: { type: String, default: "" }, // Added
+  phoneNumber: { type: String, default: "" },
+  businessAddress: { type: String, default: "" },
+  operatingHours: { type: String, default: "" },
+  productCategories: { type: [String], default: [] }, // Added
+  fabricTypes: { type: [String], default: [] }, // Added
+  moq: { type: String, default: "" }, // Added
+  
+  // Additional Info
+  gstinNumber: { type: String, default: "" },
+  website: { type: String, default: "" },
 }, { timestamps: true });
 
 // Hash password before saving

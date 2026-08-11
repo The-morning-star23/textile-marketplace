@@ -5,93 +5,140 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 const processAIOnboarding = async (req, res) => {
   try {
-    const { userId, description } = req.body;
+    const userId = req.body.userId || (req.user && (req.user._id || req.user.id));
+    const { description } = req.body;
 
-    if (!description) {
-      return res.status(400).json({ message: "Please provide a description." });
-    }
+    if (!userId) return res.status(400).json({ message: "User ID is required." });
+    if (!description) return res.status(400).json({ message: "Please provide a description." });
 
-    const prompt = `
-      You are an AI data extractor for a B2B textile marketplace. 
-      Read the following text from a new buyer and extract their preferences into a strict JSON format.
-      
-      Extract these exact keys:
-      - businessType (e.g., Boutique, Manufacturer, Independent Designer)
-      - industry (e.g., Fashion, Home Decor, Industrial)
-      - categoriesOfInterest (Array of strings, e.g., ["Apparel", "Luxury Fabrics"])
-      - preferredFabrics (Array of strings, e.g., ["Silk", "Organic Cotton", "Linen"])
-      - typicalOrderQuantity (String, e.g., "50 meters")
-      - budgetRange (String, e.g., "$15 - $30/meter")
-      - additionalPreferences (String containing any extra notes, certifications, or custom requests mentioned)
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: "User not found." });
 
-      If a detail is missing, make your best logical guess based on context, or output "Not specified".
-      Return ONLY valid JSON. Do not include markdown formatting like \`\`\`json.
-      
-      User Text: "${description}"
-    `;
+    const isSupplier = user.role === "supplier";
+
+    // Notice we added "contactEmail" to the AI's required keys list here!
+    const prompt = isSupplier 
+      ? `You are a strict data extractor. Extract business details from the text into JSON.
+         Keys MUST be exactly: "businessName", "businessType", "contactEmail", "phoneNumber", "businessAddress", "operatingHours", "productCategories" (array of strings), "fabricTypes" (array of strings), "moq", "gstinNumber", "website".
+         If a detail is missing, leave strings empty "" and arrays empty [].
+         Text: "${description}"
+         Output ONLY a valid JSON object. No markdown, no conversational text.`
+      : `You are a strict data extractor. Extract buyer preferences into JSON.
+         Keys MUST be exactly: "businessType", "industry", "categoriesOfInterest" (array), "preferredFabrics" (array), "typicalOrderQuantity", "budgetRange", "additionalPreferences".
+         If a detail is missing, use "Not specified".
+         Text: "${description}"
+         Output ONLY a valid JSON object. No markdown, no conversational text.`;
 
     const model = genAI.getGenerativeModel({ model: "gemini-3.5-flash" });
     const result = await model.generateContent(prompt);
-    let text = result.response.text().trim();
+    let text = result.response.text();
+
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      throw new Error("AI did not return a valid JSON object. Raw output: " + text);
+    }
     
-    if (text.startsWith("```json")) text = text.replace("```json", "");
-    if (text.endsWith("```")) text = text.replace("```", "");
+    // Here is where the AI data is stored!
+    const extractedData = JSON.parse(jsonMatch[0]);
+    let updateData = { isOnboarded: true };
 
-    const extractedData = JSON.parse(text);
+    if (isSupplier) {
+      updateData.businessName = extractedData.businessName || "";
+      updateData.businessType = extractedData.businessType || "";
+      
+      // FIX: Using extractedData instead of data for the AI function
+      if (extractedData.contactEmail) {
+        updateData.email = extractedData.contactEmail; 
+      }
+      
+      updateData.phoneNumber = extractedData.phoneNumber || "";
+      updateData.businessAddress = extractedData.businessAddress || "";
+      updateData.operatingHours = extractedData.operatingHours || "";
+      updateData.productCategories = Array.isArray(extractedData.productCategories) ? extractedData.productCategories : [];
+      updateData.fabricTypes = Array.isArray(extractedData.fabricTypes) ? extractedData.fabricTypes : [];
+      updateData.moq = extractedData.moq || "";
+      updateData.gstinNumber = extractedData.gstinNumber || "";
+      updateData.website = extractedData.website || "";
+    } else {
+      updateData.preferences = extractedData;
+    }
 
-    const updatedUser = await User.findByIdAndUpdate(
-      userId,
-      {
-        preferences: extractedData,
-        isOnboarded: true
-      },
-      { new: true }
-    );
+    const updatedUser = await User.findByIdAndUpdate(userId, updateData, { new: true });
 
+    // Send the contactEmail back correctly to the frontend
     res.status(200).json({ 
-      message: "Onboarding successful!", 
-      preferences: updatedUser.preferences,
+      message: "AI Onboarding successful!", 
+      data: isSupplier ? { ...updateData, contactEmail: updatedUser.email } : updatedUser.preferences,
       isOnboarded: updatedUser.isOnboarded
     });
 
   } catch (error) {
     console.error("Onboarding AI Error:", error);
-    res.status(500).json({ message: "Failed to process onboarding data." });
+    res.status(500).json({ message: "Failed to process AI data.", error: error.message });
   }
 };
 
 const saveManualOnboarding = async (req, res) => {
   try {
-    const { userId, preferences } = req.body;
-    
-    // Clean up comma-separated strings into arrays where needed (Plain JS syntax)
-    const formattedPreferences = {
-      ...preferences,
-      categoriesOfInterest: typeof preferences.categoriesOfInterest === 'string' 
-        ? preferences.categoriesOfInterest.split(',').map(s => s.trim()) 
-        : preferences.categoriesOfInterest,
-      preferredFabrics: typeof preferences.preferredFabrics === 'string' 
-        ? preferences.preferredFabrics.split(',').map(s => s.trim()) 
-        : preferences.preferredFabrics,
-    };
+    const userId = req.body.userId || (req.user && (req.user._id || req.user.id));
+    const data = req.body; 
 
-    const updatedUser = await User.findByIdAndUpdate(
-      userId,
-      {
-        preferences: formattedPreferences,
-        isOnboarded: true
-      },
-      { new: true }
-    );
+    if (!userId) return res.status(400).json({ message: "User ID is required." });
+
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: "User not found." });
+
+    let updateData = { isOnboarded: true };
+
+    if (user.role === "supplier") {
+      updateData.businessName = data.businessName || data.preferences?.businessName || "";
+      updateData.businessType = data.businessType || data.preferences?.businessType || "";
+      
+      // FIX: Grabbing the email safely from the manual form payload
+      if (data.contactEmail || data.preferences?.contactEmail) {
+        updateData.email = data.contactEmail || data.preferences?.contactEmail;
+      }
+
+      updateData.phoneNumber = data.phoneNumber || data.preferences?.phoneNumber || "";
+      updateData.businessAddress = data.businessAddress || data.preferences?.businessAddress || "";
+      updateData.operatingHours = data.operatingHours || data.preferences?.operatingHours || "";
+      updateData.productCategories = data.productCategories || data.categories || [];
+      
+      let rawFabrics = data.fabricTypes || data.preferences?.fabricTypes;
+      if (typeof rawFabrics === 'string') {
+        updateData.fabricTypes = rawFabrics.split(',').map(s => s.trim());
+      } else if (Array.isArray(rawFabrics)) {
+        updateData.fabricTypes = rawFabrics;
+      } else {
+        updateData.fabricTypes = [];
+      }
+
+      updateData.moq = data.moq || data.preferences?.moq || "";
+      updateData.gstinNumber = data.gstinNumber || data.preferences?.gstinNumber || "";
+      updateData.website = data.website || data.preferences?.website || "";
+    } else {
+      const prefs = data.preferences || data;
+      updateData.preferences = {
+        ...prefs,
+        categoriesOfInterest: typeof prefs.categoriesOfInterest === 'string' 
+          ? prefs.categoriesOfInterest.split(',').map(s => s.trim()) 
+          : prefs.categoriesOfInterest,
+        preferredFabrics: typeof prefs.preferredFabrics === 'string' 
+          ? prefs.preferredFabrics.split(',').map(s => s.trim()) 
+          : prefs.preferredFabrics,
+      };
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(userId, updateData, { new: true });
 
     res.status(200).json({ 
       message: "Manual onboarding successful!", 
-      preferences: updatedUser.preferences,
+      data: user.role === "supplier" ? { ...updateData, contactEmail: updatedUser.email } : updatedUser.preferences,
       isOnboarded: updatedUser.isOnboarded
     });
   } catch (error) {
     console.error("Manual Onboarding Error:", error);
-    res.status(500).json({ message: "Failed to save profile." });
+    res.status(500).json({ message: "Failed to save profile.", error: error.message });
   }
 };
 

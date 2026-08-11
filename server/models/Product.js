@@ -30,7 +30,9 @@ const productSchema = new mongoose.Schema(
     // --- NEW PRODUCT DETAIL FIELDS ---
     availableColors: [
       {
-        type: String,
+        name: { type: String, required: true },       // e.g., "Crimson Red"
+        hexCode: { type: String, default: "#000000" }, // e.g., "#DC143C" (for the swatch)
+        imageUrl: { type: String }                    // The specific image for this color
       },
     ],
     specifications: {
@@ -45,6 +47,11 @@ const productSchema = new mongoose.Schema(
     availableStock: {
       type: Number,
       default: 0,
+    },
+    // --- INVENTORY MANAGEMENT ---
+    inStock: {
+      type: Boolean,
+      default: true, // New products are in-stock by default
     },
   },
   { timestamps: true }
