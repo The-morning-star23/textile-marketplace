@@ -11,20 +11,35 @@ export default function SupplierDashboard() {
   // State for real database metrics
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [products, setProducts] = useState<any[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [orders, setOrders] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Fetch real product data when the dashboard loads
+  // Fetch real product & order data when the dashboard loads
   useEffect(() => {
     const fetchDashboardData = async () => {
       // Wait for auth to load
-      if (!auth?.user?._id) return; 
+      const supplierId = auth?.user?._id;
+      const token = auth?.token;
+      if (!supplierId || !token) return; 
       
       try {
-        const res = await fetch(`http://localhost:5000/api/products/supplier/${auth.user._id}`);
-        if (res.ok) {
-          const data = await res.json();
-          setProducts(data);
+        // Fetch Products
+        const prodRes = await fetch(`http://localhost:5000/api/products/supplier/${supplierId}`);
+        if (prodRes.ok) {
+          const prodData = await prodRes.json();
+          setProducts(prodData);
         }
+
+        // Fetch Orders
+        const ordRes = await fetch(`http://localhost:5000/api/orders/supplier/${supplierId}`, {
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+        if (ordRes.ok) {
+          const ordData = await ordRes.json();
+          setOrders(ordData);
+        }
+
       } catch (error) {
         console.error("Failed to fetch dashboard data:", error);
       } finally {
@@ -33,19 +48,17 @@ export default function SupplierDashboard() {
     };
 
     fetchDashboardData();
-  }, [auth?.user?._id]);
+  }, [auth?.user?._id, auth?.token]);
 
   // Calculate live metrics
   const totalProducts = products.length;
   const activeProducts = products.filter(p => p.inStock !== false).length;
   const inventoryAlerts = products.filter(p => p.inStock === false).length;
-
-  // Mock data for the Recent Orders widget (until we test buyer flows!)
-  const recentOrders = [
-    { id: "ORD-9021", buyer: "Horizon Apparel", date: "Today, 10:30 AM", status: "Pending", total: "$3,450" },
-    { id: "ORD-9020", buyer: "Luxe Threads Co.", date: "Yesterday", status: "Processing", total: "$1,200" },
-    { id: "ORD-9019", buyer: "Global Denim", date: "Aug 5, 2026", status: "Shipped", total: "$8,900" },
-  ];
+  
+  const pendingOrdersCount = orders.filter(o => o.status === 'Pending').length;
+  
+  // Get top 5 most recent orders for the table
+  const recentOrders = orders.slice(0, 5);
 
   return (
     <div className="p-6 md:p-10 z-10 w-full max-w-7xl mx-auto font-sans">
@@ -68,7 +81,7 @@ export default function SupplierDashboard() {
       {/* TOP METRICS ROW */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
         
-        {/* Widget 1: Pending Orders (Mock for now) */}
+        {/* Widget 1: Pending Orders (REAL DATA) */}
         <div className="bg-[#0B1120]/60 backdrop-blur-md rounded-3xl border border-indigo-500/20 p-6 shadow-xl relative overflow-hidden group hover:border-cyan-500/50 transition-colors">
           <div className="absolute top-0 right-0 w-24 h-24 bg-cyan-500/10 rounded-full blur-[30px] group-hover:bg-cyan-500/20 transition-colors"></div>
           <div className="flex justify-between items-start mb-2">
@@ -77,7 +90,9 @@ export default function SupplierDashboard() {
             </div>
           </div>
           <h3 className="text-indigo-300 text-sm font-bold uppercase tracking-wider mb-1">Pending Orders</h3>
-          <div className="text-3xl font-extrabold text-cyan-50">12</div>
+          <div className="text-3xl font-extrabold text-cyan-50">
+            {isLoading ? "..." : pendingOrdersCount}
+          </div>
           <p className="text-xs font-bold text-cyan-400 mt-2 flex items-center gap-1">
             Requires fulfillment
           </p>
@@ -148,36 +163,42 @@ export default function SupplierDashboard() {
             </Link>
           </div>
           <div className="flex-1 p-6 overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="text-xs font-bold text-indigo-400 uppercase tracking-widest border-b border-indigo-500/20">
-                  <th className="pb-4 font-bold">Order ID</th>
-                  <th className="pb-4 font-bold">Buyer</th>
-                  <th className="pb-4 font-bold">Date</th>
-                  <th className="pb-4 font-bold">Status</th>
-                  <th className="pb-4 font-bold text-right">Total</th>
-                </tr>
-              </thead>
-              <tbody className="text-sm divide-y divide-indigo-500/10">
-                {recentOrders.map((order, idx) => (
-                  <tr key={idx} className="hover:bg-indigo-900/20 transition-colors group">
-                    <td className="py-4 font-bold text-cyan-50">{order.id}</td>
-                    <td className="py-4 text-indigo-200">{order.buyer}</td>
-                    <td className="py-4 text-indigo-300/80">{order.date}</td>
-                    <td className="py-4">
-                      <span className={`px-3 py-1 rounded-full text-xs font-bold border ${
-                        order.status === 'Pending' ? 'bg-cyan-900/40 text-cyan-400 border-cyan-500/30' :
-                        order.status === 'Processing' ? 'bg-amber-900/40 text-amber-400 border-amber-500/30' :
-                        'bg-emerald-900/40 text-emerald-400 border-emerald-500/30'
-                      }`}>
-                        {order.status}
-                      </span>
-                    </td>
-                    <td className="py-4 font-extrabold text-emerald-400 text-right">{order.total}</td>
+            {isLoading ? (
+              <div className="text-center py-10 text-cyan-50/50 animate-pulse">Loading orders...</div>
+            ) : recentOrders.length === 0 ? (
+              <div className="text-center py-10 text-indigo-300/60">No orders received yet.</div>
+            ) : (
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="text-xs font-bold text-indigo-400 uppercase tracking-widest border-b border-indigo-500/20">
+                    <th className="pb-4 font-bold">Order ID</th>
+                    <th className="pb-4 font-bold">Buyer</th>
+                    <th className="pb-4 font-bold">Date</th>
+                    <th className="pb-4 font-bold">Status</th>
+                    <th className="pb-4 font-bold text-right">Total</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="text-sm divide-y divide-indigo-500/10">
+                  {recentOrders.map((order) => (
+                    <tr key={order._id} className="hover:bg-indigo-900/20 transition-colors group">
+                      <td className="py-4 font-bold text-cyan-50">#{order._id.slice(-6)}</td>
+                      <td className="py-4 text-indigo-200">{order.buyer?.name || "Unknown Buyer"}</td>
+                      <td className="py-4 text-indigo-300/80">{new Date(order.createdAt).toLocaleDateString()}</td>
+                      <td className="py-4">
+                        <span className={`px-3 py-1 rounded-full text-xs font-bold border ${
+                          order.status === 'Pending' ? 'bg-cyan-900/40 text-cyan-400 border-cyan-500/30' :
+                          order.status === 'Processing' ? 'bg-amber-900/40 text-amber-400 border-amber-500/30' :
+                          'bg-emerald-900/40 text-emerald-400 border-emerald-500/30'
+                        }`}>
+                          {order.status}
+                        </span>
+                      </td>
+                      <td className="py-4 font-extrabold text-emerald-400 text-right">${order.totalPrice.toFixed(2)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
         </div>
 

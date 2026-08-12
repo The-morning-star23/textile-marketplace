@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @next/next/no-img-element */
 "use client";
@@ -36,18 +35,6 @@ export default function Home() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
 
-  // --- 🚀 THE GHOST SESSION FIX ---
-  // Automatically route logged-in users to their correct dashboard
-  useEffect(() => {
-    if (user) {
-      if (user.role === "supplier") {
-        router.push("/supplier/dashboard");
-      } else if (user.role === "buyer") {
-        router.push("/buyer/dashboard");
-      }
-    }
-  }, [user, router]);
-
   useEffect(() => {
     const fetchFeatured = async () => {
       try {
@@ -63,23 +50,14 @@ export default function Home() {
       }
     };
 
-    // Only fetch featured products if the user isn't about to be redirected
-    if (!user) {
-      fetchFeatured();
-    }
-  }, [user]);
+    fetchFeatured();
+  }, []);
 
   // Handle Search Submission
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    // Navigate to marketplace and pass the search query in the URL
     router.push(`/marketplace?search=${encodeURIComponent(searchQuery)}&category=${encodeURIComponent(selectedCategory)}`);
   };
-
-  // If the user is logged in, we render a blank/loading screen briefly while the router pushes them away
-  if (user) {
-    return <div className="min-h-screen bg-[#0B1120]"></div>;
-  }
 
   return (
     <div className="min-h-screen bg-[#0B1120] selection:bg-cyan-500/30 selection:text-cyan-100 flex flex-col relative overflow-hidden font-sans">
@@ -141,13 +119,61 @@ export default function Home() {
 
           {/* Navigation Buttons */}
           <div className="flex items-center gap-4 shrink-0">
-            {/* The user ? conditional is mostly redundant now due to the early return, but safe to keep! */}
-            <Link href="/login" className="text-sm font-semibold text-indigo-200 hover:text-cyan-100 transition">
-              Log in
-            </Link>
-            <Link href="/register" className="text-sm font-semibold bg-linear-to-r from-cyan-500 to-indigo-500 text-cyan-50 px-5 py-2.5 rounded-xl hover:shadow-[0_0_20px_rgba(34,211,238,0.4)] hover:scale-105 transition-all duration-300">
-              Sign Up
-            </Link>
+            {user ? (
+              <div className="flex items-center gap-3">
+                {/* Dashboard Button */}
+                <Link 
+                  href={user.role === 'supplier' ? "/supplier/dashboard" : "/buyer/dashboard"} 
+                  className="flex items-center gap-2 px-4 py-2 bg-indigo-900/40 border border-indigo-500/30 rounded-xl text-indigo-200 hover:text-cyan-400 hover:border-cyan-400/50 transition-all group text-sm font-bold"
+                >
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                  </svg>
+                  Dashboard
+                </Link>
+
+                {/* Cart Button (For Buyers only) */}
+                {user.role === 'buyer' && (
+                  <Link 
+                    href="/buyer/cart"
+                    className="flex items-center gap-2 px-4 py-2 bg-indigo-900/40 border border-indigo-500/30 rounded-xl text-indigo-200 hover:text-cyan-400 hover:border-cyan-400/50 transition-all group text-sm font-bold relative"
+                  >
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                    Cart
+                    {cart?.itemCount > 0 && (
+                      <span className="absolute -top-2 -right-2 flex h-5 w-5">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-5 w-5 bg-cyan-500 border-2 border-[#0B1120] text-[9px] items-center justify-center font-extrabold text-[#0B1120]">
+                          {cart?.itemCount}
+                        </span>
+                      </span>
+                    )}
+                  </Link>
+                )}
+
+                {/* Log Out Button */}
+                <button 
+                  onClick={() => auth?.logout?.()}
+                  className="cursor-pointer flex items-center gap-2 px-4 py-2 bg-red-900/10 border border-red-500/20 rounded-xl text-red-400 hover:text-red-300 hover:bg-red-500/20 hover:border-red-400/50 transition-all group text-sm font-bold"
+                >
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                  </svg>
+                  Log out
+                </button>
+              </div>
+            ) : (
+              <>
+                <Link href="/login" className="text-sm font-semibold text-indigo-200 hover:text-cyan-100 transition">
+                  Log in
+                </Link>
+                <Link href="/register" className="text-sm font-semibold bg-linear-to-r from-cyan-500 to-indigo-500 text-cyan-50 px-5 py-2.5 rounded-xl hover:shadow-[0_0_20px_rgba(34,211,238,0.4)] hover:scale-105 transition-all duration-300">
+                  Sign Up
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </nav>

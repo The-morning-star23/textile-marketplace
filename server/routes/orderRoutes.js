@@ -1,6 +1,7 @@
 const express = require('express');
 const Order = require('../models/Order');
 const { verifyToken } = require('../middleware/authMiddleware');
+const Product = require('../models/Product');
 const router = express.Router();
 
 // CREATE: Place a new order (Buyer Checkout)
@@ -23,6 +24,8 @@ router.post('/', verifyToken, async (req, res) => {
         buyer: buyerId,
         supplier: item.supplierId,
         product: item.productId,
+        color: item.color,
+        image: item.image,
         quantity: item.quantity,
         totalPrice: item.price * item.quantity, // Calculate item subtotal
         shippingAddress: shippingAddress,
@@ -31,6 +34,9 @@ router.post('/', verifyToken, async (req, res) => {
       
       const savedOrder = await newOrder.save();
       createdOrders.push(savedOrder);
+      await Product.findByIdAndUpdate(item.productId, {
+        $inc: { availableStock: -item.quantity } // $inc with a negative number subtracts it!
+      });
     }
 
     res.status(201).json({ message: "Orders placed successfully", orders: createdOrders });

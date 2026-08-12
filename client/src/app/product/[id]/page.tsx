@@ -7,7 +7,6 @@ import Link from "next/link";
 import { AuthContext } from "../../../context/AuthContext";
 import { CartContext } from "../../../context/CartContext";
 
-// Upgraded Interface to match the new Variant Database Schema
 interface ColorVariant {
   name: string;
   hexCode: string;
@@ -33,6 +32,7 @@ interface Product {
   };
   moq?: number;
   availableStock: number;
+  inStock?: boolean; // <--- ADDED: To catch the manual override flag
 }
 
 export default function ProductDetailsPage() {
@@ -49,20 +49,16 @@ export default function ProductDetailsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
-  // Hydration fix state
   const [isMounted, setIsMounted] = useState(false);
   
-  // Display States
   const [selectedImage, setSelectedImage] = useState<string>("");
   const [selectedColor, setSelectedColor] = useState<ColorVariant | null>(null);
   
-  // Quantity can temporarily be a string while the user is typing
   const [quantity, setQuantity] = useState<number | string>(1);
-  
   const [searchQuery, setSearchQuery] = useState("");
+  
   const isLoggedIn = auth?.token || (typeof window !== "undefined" && localStorage.getItem("token"));
 
-  // Set isMounted to true once the component has mounted in the browser
   useEffect(() => {
     setIsMounted(true);
   }, []);
@@ -80,7 +76,6 @@ export default function ProductDetailsPage() {
           setSelectedImage(data.images[0]);
         }
         
-        // Auto-select the first color if variants exist
         if (data.availableColors && data.availableColors.length > 0) {
           setSelectedColor(data.availableColors[0]);
           if (data.availableColors[0].imageUrl) {
@@ -101,9 +96,7 @@ export default function ProductDetailsPage() {
     if (productId) fetchProduct();
   }, [productId]);
 
-  // --- SMART QUANTITY HANDLERS ---
   const handleQuantityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // Allow the user to clear the box while typing
     if (e.target.value === "") {
       setQuantity("");
       return;
@@ -113,7 +106,6 @@ export default function ProductDetailsPage() {
   };
 
   const handleQuantityBlur = () => {
-    // When the user clicks outside the box, enforce the limits!
     const min = product?.moq || 1;
     const max = product?.availableStock || 0;
     
@@ -128,6 +120,33 @@ export default function ProductDetailsPage() {
     e.preventDefault();
     if (searchQuery.trim()) {
       router.push(`/marketplace?search=${encodeURIComponent(searchQuery)}`);
+    }
+  };
+
+  const handleCartAction = (redirectToCheckout: boolean) => {
+    if (!isLoggedIn) {
+      alert("Please log in or create an account to start sourcing fabrics!");
+      router.push("/login");
+      return;
+    }
+    
+    if (cartContext && product) {
+      cartContext.addToCart({
+        productId: product._id,
+        title: product.title, 
+        price: product.price,
+        quantity: Number(quantity),
+        image: selectedImage,
+        supplierId: product.supplier?._id || "unknown",
+        moq: product.moq || 1,
+        color: selectedColor?.name || "Standard"
+      });
+
+      if (redirectToCheckout) {
+        router.push("/buyer/checkout");
+      } else {
+        alert("Added to cart successfully!");
+      }
     }
   };
 
@@ -160,20 +179,20 @@ export default function ProductDetailsPage() {
     );
   }
 
+  // --- SMART STOCK CHECK ---
+  const isOutOfStock = product.inStock === false || product.availableStock === 0;
+
   return (
     <div className="min-h-screen bg-[#080C17] flex flex-col font-sans relative selection:bg-cyan-500/30 selection:text-cyan-100">
       
-      {/* AURORA LIGHTS BACKGROUND */}
       <div className="inset-0 z-0 overflow-hidden pointer-events-none fixed">
         <div className="absolute top-[-10%] right-[-10%] w-[50vw] h-[50vw] bg-violet-600/15 rounded-full blur-[120px] mix-blend-screen animate-pulse duration-10000"></div>
         <div className="absolute bottom-[20%] left-[-10%] w-[40vw] h-[40vw] bg-cyan-600/10 rounded-full blur-[100px] mix-blend-screen"></div>
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#6366f10a_1px,transparent_1px),linear-gradient(to_bottom,#6366f10a_1px,transparent_1px)] bg-size-[4rem_4rem]"></div>
       </div>
 
-      {/* Smart Navbar */}
       <nav className="relative z-50 w-full backdrop-blur-2xl bg-[#0B1120]/80 border-b border-indigo-500/20 shadow-xl">
         <div className="max-w-7xl mx-auto px-6 h-20 flex justify-between items-center">
-          
           <Link href="/" className="text-2xl font-extrabold text-cyan-50 tracking-tighter flex items-center gap-3">
             <div className="w-10 h-10 bg-linear-to-br from-cyan-400 to-indigo-600 rounded-xl flex items-center justify-center shadow-[0_0_20px_rgba(34,211,238,0.4)]">
               <svg className="w-6 h-6 text-cyan-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -183,7 +202,6 @@ export default function ProductDetailsPage() {
             Thread<span className="text-cyan-400">Market</span>
           </Link>
 
-          {/* Search Bar */}
           <form onSubmit={handleSearch} className="hidden md:flex flex-1 max-w-md mx-8 relative">
             <input
               type="text"
@@ -199,9 +217,7 @@ export default function ProductDetailsPage() {
             </button>
           </form>
 
-          {/* Navigation Buttons */}
           <div className="flex items-center gap-4">
-            {/* HYDRATION FIX: Only render after mounting */}
             {isMounted && (
               isLoggedIn ? (
                 <>
@@ -234,15 +250,15 @@ export default function ProductDetailsPage() {
                     )}
                   </Link>
 
-                  <button 
-                    onClick={() => auth?.logout?.()}
-                    className="flex items-center gap-2 px-4 py-2 bg-red-900/10 border border-red-500/20 rounded-xl text-red-400 hover:text-red-300 hover:bg-red-500/20 hover:border-red-400/50 transition-all group text-sm font-bold ml-2"
-                  >
-                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                    </svg>
-                    Log out
-                  </button>
+                <button 
+                  onClick={() => auth?.logout?.()}
+                  className="cursor-pointer flex items-center gap-2 px-4 py-2 bg-red-900/10 border border-red-500/20 rounded-xl text-red-400 hover:text-red-300 hover:bg-red-500/20 hover:border-red-400/50 transition-all group text-sm font-bold"
+                >
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                  </svg>
+                  Log out
+                </button>
                 </>
               ) : (
                 <>
@@ -259,10 +275,7 @@ export default function ProductDetailsPage() {
         </div>
       </nav>
 
-      {/* Main Content Area */}
       <main className="flex-1 max-w-7xl mx-auto w-full font-sans p-6 md:py-12 relative z-10">
-        
-        {/* Smart Breadcrumbs */}
         <nav className="mb-10 text-sm text-indigo-300/60 flex items-center gap-2">
           <span 
             onClick={() => router.push('/marketplace')} 
@@ -275,8 +288,6 @@ export default function ProductDetailsPage() {
         </nav>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12 lg:gap-16">
-          
-          {/* Left Column: Image Gallery */}
           <div className="flex flex-col gap-6">
             <div className="aspect-4/3 bg-[#0B1120]/50 border border-indigo-500/20 backdrop-blur-md rounded-3xl p-4 shadow-xl relative overflow-hidden group flex items-center justify-center">
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -287,7 +298,6 @@ export default function ProductDetailsPage() {
               />
             </div>
             
-            {/* Thumbnails (Combines main images and color variant images) */}
             <div className="grid grid-cols-5 gap-4">
               {product.images?.map((img) => (
                 <div 
@@ -300,7 +310,6 @@ export default function ProductDetailsPage() {
                 </div>
               ))}
               
-              {/* Show variant thumbnails if they have images */}
               {product.availableColors?.filter(c => c.imageUrl).map((color, idx) => (
                 <div 
                   key={`var-${idx}`} 
@@ -318,7 +327,6 @@ export default function ProductDetailsPage() {
             </div>
           </div>
 
-          {/* Right Column: Product Information & Action Panel */}
           <div className="flex flex-col gap-10">
             <div>
               <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-400/30 text-cyan-400 text-xs font-extrabold uppercase tracking-widest mb-4">
@@ -333,20 +341,20 @@ export default function ProductDetailsPage() {
               </p>
             </div>
 
-            {/* Pricing and Stock Panel */}
             <div className="bg-[#0B1120]/60 backdrop-blur-xl p-8 rounded-3xl border border-indigo-500/20 shadow-2xl">
               <div className="flex justify-between items-end mb-8 gap-4 flex-wrap">
                   <div>
                       <span className="text-5xl font-extrabold text-cyan-50 tracking-tight drop-shadow-lg">${product.price}</span>
                       <span className="text-lg font-bold text-indigo-300/70">/meter (MOQ: {product.moq || 1}m)</span>
                   </div>
-                  <div className={`text-sm font-bold flex items-center gap-2 ${product.availableStock > 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                      <span className={`w-3 h-3 rounded-full ${product.availableStock > 0 ? 'bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.5)]' : 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]'}`}></span>
-                      {product.availableStock > 0 ? `${product.availableStock} meters available` : "Not in stock"}
+                  
+                  {/* DYNAMIC STOCK TEXT */}
+                  <div className={`text-sm font-bold flex items-center gap-2 ${!isOutOfStock ? 'text-emerald-400' : 'text-red-400'}`}>
+                      <span className={`w-3 h-3 rounded-full ${!isOutOfStock ? 'bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.5)]' : 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]'}`}></span>
+                      {!isOutOfStock ? `${product.availableStock} meters available` : "Currently Out of Stock"}
                   </div>
               </div>
               
-              {/* SMART COLOR PICKER */}
               {product.availableColors && product.availableColors.length > 0 && (
                   <div className="mb-6 border-t border-indigo-500/20 pt-6">
                       <div className="flex justify-between items-center mb-3">
@@ -377,8 +385,8 @@ export default function ProductDetailsPage() {
                   </div>
               )}
 
-              {/* SMART QUANTITY SELECTOR (Type or Click) */}
-              {product.availableStock > 0 && (
+              {/* DYNAMIC QUANTITY SELECTOR (Only shows if in-stock!) */}
+              {!isOutOfStock && (
                   <div className="mb-8 border-t border-b border-indigo-500/20 py-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <label className="text-lg font-bold text-cyan-50">Order Amount (meters)</label>
                     <div className="flex items-center gap-2 bg-indigo-950/50 rounded-full p-1 border border-indigo-500/30 max-w-50 w-full justify-between overflow-hidden">
@@ -387,8 +395,6 @@ export default function ProductDetailsPage() {
                         className="w-10 h-10 shrink-0 rounded-full bg-indigo-900/80 text-cyan-50 font-bold flex items-center justify-center hover:bg-indigo-800 transition border border-indigo-500/30 disabled:opacity-30"
                         disabled={Number(quantity) <= (product.moq || 1)}
                       >—</button>
-                      
-                      {/* Input where buyer can type directly! */}
                       <input 
                         type="number" 
                         value={quantity}
@@ -396,7 +402,6 @@ export default function ProductDetailsPage() {
                         onBlur={handleQuantityBlur}
                         className="w-full bg-transparent text-center text-xl font-extrabold text-cyan-50 outline-none appearance-none"
                       />
-                      
                       <button 
                         onClick={() => setQuantity(q => Math.min(product.availableStock, Number(q) + 1))}
                         className="w-10 h-10 shrink-0 rounded-full bg-indigo-900/80 text-cyan-50 font-bold flex items-center justify-center hover:bg-indigo-800 transition border border-indigo-500/30 disabled:opacity-30"
@@ -406,37 +411,32 @@ export default function ProductDetailsPage() {
                   </div>
               )}
 
-              {/* Action Buttons */}
-              <div className="flex flex-col sm:flex-row gap-4">
-                <button 
-                  onClick={() => {
-                    if (!isLoggedIn) {
-                      alert("Please log in or create an account to start sourcing fabrics!");
-                      router.push("/login");
-                      return;
-                    }
-                    if (cartContext && product) {
-                      // Passing the selected color to the cart!
-                      cartContext.addToCart({
-                        productId: product._id,
-                        title: `${product.title} ${selectedColor ? `(${selectedColor.name})` : ''}`,
-                        price: product.price,
-                        quantity: Number(quantity),
-                        image: selectedImage,
-                        supplierId: product.supplier?._id || "unknown",
-                        moq: product.moq || 1
-                      });
-                      alert("Added to cart successfully!");
-                    }
-                  }}
-                  className="flex-1 bg-linear-to-r from-cyan-600 to-indigo-600 text-cyan-50 px-8 py-5 rounded-2xl text-lg font-bold hover:shadow-[0_0_30px_rgba(99,102,241,0.5)] transition-all duration-300 disabled:opacity-50 disabled:grayscale flex items-center justify-center gap-3"
-                  disabled={product.availableStock === 0}
-                >
-                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-                  </svg>
-                  Add to Cart
-                </button>
+              <div className="flex flex-col gap-4">
+                <div className="flex flex-col sm:flex-row gap-4">
+                  {/* Buttons automatically disable if Out of Stock! */}
+                  <button 
+                    onClick={() => handleCartAction(false)}
+                    className="flex-1 bg-indigo-900/40 text-cyan-400 border border-cyan-500/30 px-8 py-4 rounded-2xl text-lg font-bold hover:bg-cyan-900/30 hover:border-cyan-400 transition-all duration-300 disabled:opacity-50 disabled:grayscale flex items-center justify-center gap-3 disabled:cursor-not-allowed"
+                    disabled={isOutOfStock}
+                  >
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                    Add to Cart
+                  </button>
+
+                  <button 
+                    onClick={() => handleCartAction(true)}
+                    className="flex-1 bg-linear-to-r from-cyan-600 to-indigo-600 text-cyan-50 px-8 py-4 rounded-2xl text-lg font-bold hover:shadow-[0_0_30px_rgba(99,102,241,0.5)] transition-all duration-300 disabled:opacity-50 disabled:grayscale flex items-center justify-center gap-3 disabled:cursor-not-allowed"
+                    disabled={isOutOfStock}
+                  >
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                    Buy Now
+                  </button>
+                </div>
+
                 <button 
                   onClick={() => {
                     if (!isLoggedIn) {
@@ -445,14 +445,13 @@ export default function ProductDetailsPage() {
                       alert(`Sample request sent to supplier for ${selectedColor?.name || 'this fabric'}!`);
                     }
                   }}
-                  className="bg-indigo-900/40 text-cyan-100 border border-indigo-500/30 px-8 py-5 rounded-2xl text-lg font-bold hover:bg-indigo-800/50 hover:border-cyan-400/50 transition-all duration-300 flex items-center justify-center gap-3 backdrop-blur-md"
+                  className="w-full bg-indigo-900/20 text-indigo-300 border border-indigo-500/20 px-8 py-4 rounded-2xl font-bold hover:bg-indigo-800/40 hover:text-cyan-100 transition-all duration-300 flex items-center justify-center gap-3 backdrop-blur-md"
                 >
                   Request Sample
                 </button>
               </div>
             </div>
 
-            {/* Description and Specs */}
             <div className="flex flex-col gap-6">
               <h2 className="text-2xl font-bold text-cyan-50 drop-shadow-md">Description</h2>
               <p className="text-indigo-200/80 text-md leading-relaxed whitespace-pre-line">{product.description}</p>
@@ -476,7 +475,6 @@ export default function ProductDetailsPage() {
         </div>
       </main>
 
-      {/* Inline Footer */}
       <footer className="w-full border-t border-indigo-500/20 bg-[#0B1120]/80 backdrop-blur-xl py-8 z-50 relative mt-auto">
         <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-4">
           <div className="text-indigo-300/60 text-sm font-medium">

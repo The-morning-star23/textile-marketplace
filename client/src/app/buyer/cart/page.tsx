@@ -27,6 +27,27 @@ export default function BuyerCart() {
     updateQuantity(productId, currentQuantity + 1);
   };
 
+  // Smart input handlers for direct typing
+  const handleInputChange = (productId: string, value: string) => {
+    if (value === "") {
+      // Temporarily set to 0 so they can clear the box and type a new number
+      updateQuantity(productId, 0);
+      return;
+    }
+    const val = parseInt(value);
+    if (!isNaN(val)) {
+      updateQuantity(productId, val);
+    }
+  };
+
+  const handleInputBlur = (productId: string, currentQuantity: number, moq: number) => {
+    // When they click away, ensure the number respects the Minimum Order Quantity
+    const minimum = moq || 1;
+    if (currentQuantity < minimum) {
+      updateQuantity(productId, minimum);
+    }
+  };
+
   // Mock standard shipping rules for B2B wholesale
   const shippingCost = cartTotal > 5000 ? 0 : cartTotal > 0 ? 150 : 0;
   const finalTotal = cartTotal + shippingCost;
@@ -73,9 +94,16 @@ export default function BuyerCart() {
                 {/* Details */}
                 <div className="flex-1 flex flex-col w-full">
                   <div className="flex justify-between items-start mb-2">
-                    <Link href={`/product/${item.productId}`} className="font-extrabold text-cyan-50 text-xl hover:text-cyan-400 transition-colors line-clamp-1">
-                      {item.title}
-                    </Link>
+                    <div>
+                      <Link href={`/product/${item.productId}`} className="font-extrabold text-cyan-50 text-xl hover:text-cyan-400 transition-colors line-clamp-1">
+                        {item.title}
+                      </Link>
+                      
+                      {/* Show the selected color in the cart! */}
+                      {item.color && item.color !== "Standard" && (
+                        <p className="text-xs font-bold text-amber-400 mt-1 uppercase tracking-wider">{item.color}</p>
+                      )}
+                    </div>
                     <button 
                       onClick={() => removeFromCart(item.productId)}
                       className="p-2 text-red-400/80 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all"
@@ -90,7 +118,7 @@ export default function BuyerCart() {
                   <p className="text-sm text-emerald-400 font-bold mb-4">${item.price.toFixed(2)} <span className="text-indigo-400 font-medium text-xs">/ meter</span></p>
 
                   <div className="flex flex-wrap items-center gap-6 mt-auto">
-                    {/* Quantity Controls */}
+                    {/* Smart Quantity Controls (Buttons + Typing) */}
                     <div className="flex items-center bg-indigo-900/30 border border-indigo-500/30 rounded-xl overflow-hidden">
                       <button 
                         onClick={() => handleDecrease(item.productId, item.quantity, item.moq)}
@@ -99,9 +127,15 @@ export default function BuyerCart() {
                       >
                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M20 12H4" /></svg>
                       </button>
-                      <div className="px-4 py-2 font-bold text-cyan-50 min-w-15 text-center border-x border-indigo-500/30">
-                        {item.quantity}
-                      </div>
+                      
+                      <input 
+                        type="number"
+                        value={item.quantity === 0 ? "" : item.quantity}
+                        onChange={(e) => handleInputChange(item.productId, e.target.value)}
+                        onBlur={() => handleInputBlur(item.productId, item.quantity, item.moq)}
+                        className="w-20 py-2 bg-transparent font-bold text-cyan-50 text-center border-x border-indigo-500/30 outline-none appearance-none [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      />
+                      
                       <button 
                         onClick={() => handleIncrease(item.productId, item.quantity)}
                         className="px-4 py-2 text-cyan-400 hover:bg-indigo-500/20 transition-colors"

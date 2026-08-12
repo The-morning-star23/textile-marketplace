@@ -6,22 +6,38 @@ const router = express.Router();
 // CREATE: Add a new product (PROTECTED)
 router.post('/', verifyToken, async (req, res) => {
   try {
-    const { title, description, fabricType, price, moq, supplier, images } = req.body; 
+    // We added the new fields here so the backend actually catches them!
+    const { 
+      title, 
+      description, 
+      fabricType, 
+      price, 
+      moq, 
+      supplier, 
+      images,
+      availableColors,
+      specifications,
+      availableStock
+    } = req.body; 
     
     const newProduct = new Product({
       title, 
       description, 
       fabricType, 
       price, 
-      moq, 
+      moq: moq || 1, 
       supplier,
       images: images || [],
+      availableColors: availableColors || [], // <--- Catching Colors
+      specifications: specifications || { width: "N/A", weight: "N/A", composition: "N/A" }, // <--- Catching Specs
+      availableStock: availableStock || 0, // <--- Catching Live Inventory Count
       inStock: true // default new products to in-stock
     });
     
     const savedProduct = await newProduct.save();
     res.status(201).json(savedProduct);
   } catch (error) {
+    console.error("Error creating product:", error);
     res.status(500).json({ error: "Failed to create product" });
   }
 });

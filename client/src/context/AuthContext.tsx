@@ -62,11 +62,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const logout = () => {
+    // 1. Clear the state
     setUser(null);
     setToken(null);
+    
+    // 2. Clear local storage
     localStorage.removeItem("user");
     localStorage.removeItem("token");
-    router.push("/");
+    
+    // 3. Force a hard redirect back to the landing page
+    // (Using window.location is best for logouts because it completely clears the browser's React memory/cache!)
+    window.location.href = "/"; 
   };
 
   return (

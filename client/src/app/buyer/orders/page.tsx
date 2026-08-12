@@ -15,6 +15,8 @@ interface Order {
   supplier: {
     name: string;
   };
+  color?: string;
+  image?: string;
   quantity: number;
   totalPrice: number;
   shippingAddress: string;
@@ -217,8 +219,9 @@ export default function BuyerOrders() {
               <div className="flex flex-col md:flex-row gap-8">
                 <div className="flex gap-5 md:w-1/2">
                   <div className="w-24 h-24 bg-slate-900 rounded-2xl overflow-hidden shrink-0 border border-indigo-500/30">
-                    {order.product?.images && order.product.images.length > 0 ? (
-                      <img src={order.product.images[0]} alt="Product" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                    {/* --- UPDATED: Uses the saved order image first, falls back to default product image if missing --- */}
+                    {order.image || (order.product?.images && order.product.images.length > 0) ? (
+                      <img src={order.image || order.product.images[0]} alt="Product" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-[10px] text-indigo-400/50 font-bold uppercase text-center p-2">No Image</div>
                     )}
@@ -230,6 +233,11 @@ export default function BuyerOrders() {
                       </Link>
                     </h3>
                     <p className="text-sm text-indigo-300/70 font-medium mt-1">From: {order.supplier?.name || "Unknown Supplier"}</p>
+                    {order.color && order.color !== "Standard" && (
+                      <p className="text-xs text-amber-400 font-bold mt-1 uppercase tracking-wider">
+                        Color: {order.color}
+                      </p>
+                    )}
                     <p className="text-sm text-indigo-400 font-bold mt-2">Qty: {order.quantity} meters</p>
                   </div>
                 </div>

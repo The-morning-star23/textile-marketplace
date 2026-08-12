@@ -221,6 +221,12 @@ export default function CheckoutPage() {
                   </div>
                   <div className="flex-1">
                     <h4 className="text-sm font-bold text-cyan-50 line-clamp-1">{item.title}</h4>
+                    
+                    {/* ADDED: Color display in the checkout summary! */}
+                    {item.color && item.color !== "Standard" && (
+                      <p className="text-xs font-bold text-amber-400 my-0.5 uppercase tracking-wider">{item.color}</p>
+                    )}
+                    
                     <p className="text-xs text-indigo-300/80">Qty: {item.quantity} m</p>
                     <p className="text-sm font-bold text-emerald-400">${(item.price * item.quantity).toFixed(2)}</p>
                   </div>

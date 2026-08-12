@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable react-hooks/set-state-in-effect */
 /* eslint-disable @next/next/no-img-element */
 "use client";
@@ -16,6 +17,8 @@ interface Product {
   supplier?: {
     name: string;
   };
+  inStock?: boolean; // <--- ADDED: To track the manual toggle
+  availableStock?: number; // <--- ADDED: To track the quantity
 }
 
 const CATEGORIES = ["All", "Cotton", "Silk", "Linen", "Polyester", "Wool", "Blend"];
@@ -29,10 +32,9 @@ export default function MarketplacePage() {
   // Hydration fix state
   const [isMounted, setIsMounted] = useState(false);
   
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const auth = useContext(AuthContext) as any;
   const isLoggedIn = auth?.token || (typeof window !== "undefined" && localStorage.getItem("token"));
-  const cart = useContext(CartContext);
+  const cart = useContext(CartContext) as any;
 
   // Set isMounted to true once the component has mounted in the browser
   useEffect(() => {
@@ -80,16 +82,15 @@ export default function MarketplacePage() {
   });
 
   return (
-    /* A lighter dark mode background (slate-900) instead of the landing page's #0B1120 */
     <div className="min-h-screen bg-slate-900 flex flex-col font-sans relative selection:bg-cyan-500/30 selection:text-cyan-100">
       
-      {/* AURORA LIGHTS BACKGROUND (Dark Mode Effects restored) */}
+      {/* AURORA LIGHTS BACKGROUND */}
       <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
         <div className="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] bg-indigo-600/20 rounded-full blur-[120px] mix-blend-screen animate-pulse duration-10000"></div>
         <div className="absolute top-[20%] right-[-10%] w-[40vw] h-[40vw] bg-cyan-600/10 rounded-full blur-[100px] mix-blend-screen"></div>
       </div>
 
-      {/* THE PUBLIC HEADER (Relative so it scrolls away naturally) */}
+      {/* THE PUBLIC HEADER */}
       <nav className="relative z-50 w-full backdrop-blur-2xl bg-[#0B1120]/95 border-b border-indigo-500/20 shadow-xl">
         <div className="max-w-7xl mx-auto px-6 h-20 flex justify-between items-center gap-4 md:gap-8">
           
@@ -119,12 +120,10 @@ export default function MarketplacePage() {
           </div>
 
           <div className="flex items-center gap-4 shrink-0">
-            {/* HYDRATION FIX: Only render buttons after mounting */}
             {isMounted && (
               isLoggedIn ? (
                 <div className="flex items-center gap-4">
       
-                  {/* Dashboard Button */}
                   <Link 
                     href="/buyer/dashboard"
                     className="flex items-center gap-2 px-4 py-2 bg-indigo-900/40 border border-indigo-500/30 rounded-xl text-indigo-200 hover:text-cyan-400 hover:border-cyan-400/50 transition-all group text-sm font-bold"
@@ -135,7 +134,6 @@ export default function MarketplacePage() {
                     Dashboard
                   </Link>
       
-                  {/* Cart Button */}
                   <Link
                     href="/buyer/cart"
                     className="relative flex items-center gap-2 px-4 py-2 bg-indigo-900/40 border border-indigo-500/30 rounded-xl text-indigo-200 hover:text-cyan-400 hover:border-cyan-400/50 transition-all group text-sm font-bold"
@@ -145,7 +143,6 @@ export default function MarketplacePage() {
                     </svg>
                     Cart
 
-                    {/* Notification Badge */}
                     {(cart?.itemCount ?? 0) > 0 && (
                       <span className="absolute -top-2 -right-2 flex h-5 w-5">
                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
@@ -156,16 +153,15 @@ export default function MarketplacePage() {
                     )}
                   </Link>
 
-                  {/* Log Out Button */}
-                  <button 
-                    onClick={() => auth?.logout?.()}
-                    className="flex items-center gap-2 px-4 py-2 bg-red-900/10 border border-red-500/20 rounded-xl text-red-400 hover:text-red-300 hover:bg-red-500/20 hover:border-red-400/50 transition-all group text-sm font-bold ml-2"
-                  >
-                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                    </svg>
-                    Log out
-                  </button>
+                <button 
+                  onClick={() => auth?.logout?.()}
+                  className="cursor-pointer flex items-center gap-2 px-4 py-2 bg-red-900/10 border border-red-500/20 rounded-xl text-red-400 hover:text-red-300 hover:bg-red-500/20 hover:border-red-400/50 transition-all group text-sm font-bold"
+                >
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                  </svg>
+                  Log out
+                </button>
                 </div>
               ) : (
                 <>
@@ -182,12 +178,10 @@ export default function MarketplacePage() {
         </div>
       </nav>
 
-      {/* Marketplace Category Toolbar */}
       <div className="max-w-7xl mx-auto px-6 w-full pt-10 pb-6 relative z-10">
         <div className="flex flex-col md:flex-row justify-between items-center gap-6">
           <h1 className="text-3xl font-extrabold text-cyan-50 tracking-tight">Global Catalog</h1>
           
-          {/* Category Filter Pills (Restored to Dark Mode) */}
           <div className="flex gap-2 overflow-x-auto w-full md:w-auto pb-2 md:pb-0 scrollbar-hide">
             {CATEGORIES.map((cat) => (
               <button
@@ -206,7 +200,6 @@ export default function MarketplacePage() {
         </div>
       </div>
 
-      {/* Product Grid (Restored to Dark Mode) */}
       <main className="flex-1 max-w-7xl mx-auto px-6 w-full pb-24 relative z-10">
         {loading ? (
           <div className="flex justify-center items-center py-20">
@@ -222,40 +215,51 @@ export default function MarketplacePage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {filteredProducts.map((product) => (
-              <div key={product._id} className="bg-indigo-950/30 backdrop-blur-xl border border-indigo-500/20 rounded-3xl overflow-hidden hover:border-cyan-400/50 hover:shadow-[0_0_40px_rgba(34,211,238,0.15)] hover:-translate-y-2 transition-all duration-500 group flex flex-col">
-                <div className="h-48 bg-slate-800 overflow-hidden relative">
-                  {product.images && product.images.length > 0 ? (
-                    <img src={product.images[0]} alt={product.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 opacity-90 group-hover:opacity-100" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-indigo-400 text-xs font-bold tracking-widest uppercase bg-indigo-950">
-                      [ No Image ]
+            {filteredProducts.map((product) => {
+              // --- SMART STOCK CHECK: Honors the supplier's manual toggle AND the stock count ---
+              const isOutOfStock = product.inStock === false || product.availableStock === 0;
+
+              return (
+                <div key={product._id} className={`bg-indigo-950/30 backdrop-blur-xl border border-indigo-500/20 rounded-3xl overflow-hidden transition-all duration-500 group flex flex-col ${isOutOfStock ? 'opacity-80 grayscale-20' : 'hover:border-cyan-400/50 hover:shadow-[0_0_40px_rgba(34,211,238,0.15)] hover:-translate-y-2'}`}>
+                  <div className="h-48 bg-slate-800 overflow-hidden relative">
+                    
+                    {/* OUT OF STOCK OVERLAY */}
+                    {isOutOfStock && (
+                      <div className="absolute inset-0 bg-[#0B1120]/60 z-20 flex items-center justify-center backdrop-blur-[2px]">
+                        <span className="bg-red-500 text-white font-extrabold px-4 py-1.5 rounded-lg uppercase tracking-widest text-sm shadow-lg shadow-red-500/30">Out of Stock</span>
+                      </div>
+                    )}
+
+                    {product.images && product.images.length > 0 ? (
+                      <img src={product.images[0]} alt={product.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 opacity-90 group-hover:opacity-100" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-indigo-400 text-xs font-bold tracking-widest uppercase bg-indigo-950">
+                        [ No Image ]
+                      </div>
+                    )}
+                    <div className="absolute top-3 right-3 bg-[#0B1120]/90 backdrop-blur-md border border-indigo-500/50 text-cyan-50 text-sm font-extrabold px-3 py-1 rounded-xl shadow-lg z-10">
+                      ${product.price}<span className="text-cyan-300/60 font-medium text-xs">/m</span>
                     </div>
-                  )}
-                  <div className="absolute top-3 right-3 bg-[#0B1120]/90 backdrop-blur-md border border-indigo-500/50 text-cyan-50 text-sm font-extrabold px-3 py-1 rounded-xl shadow-lg">
-                    ${product.price}<span className="text-cyan-300/60 font-medium text-xs">/m</span>
+                  </div>
+                  <div className="p-5 flex-1 flex flex-col">
+                    <span className="text-xs font-bold uppercase tracking-widest text-cyan-400 mb-1">{product.fabricType}</span>
+                    <h3 className="font-extrabold text-cyan-50 text-lg mb-1 line-clamp-1">{product.title}</h3>
+                    <p className="text-xs text-indigo-300/70 font-medium mt-auto pt-2">Supplier: {product.supplier?.name || "Verified Mill"}</p>
+                    
+                    <Link 
+                      href={`/product/${product._id}`}
+                      className="mt-4 w-full block text-center bg-indigo-600/20 hover:bg-linear-to-r hover:from-cyan-600 hover:to-indigo-600 border border-indigo-400/30 hover:border-transparent text-cyan-100 py-2.5 rounded-xl text-sm font-bold transition-all duration-300"
+                    >
+                      View Details
+                    </Link>
                   </div>
                 </div>
-                <div className="p-5 flex-1 flex flex-col">
-                  <span className="text-xs font-bold uppercase tracking-widest text-cyan-400 mb-1">{product.fabricType}</span>
-                  <h3 className="font-extrabold text-cyan-50 text-lg mb-1 line-clamp-1">{product.title}</h3>
-                  <p className="text-xs text-indigo-300/70 font-medium mt-auto pt-2">Supplier: {product.supplier?.name || "Verified Mill"}</p>
-                  
-                  {/* REAL LINK BUTTON (Only this part is clickable now) */}
-                  <Link 
-                    href={`/product/${product._id}`}
-                    className="mt-4 w-full block text-center bg-indigo-600/20 hover:bg-linear-to-r hover:from-cyan-600 hover:to-indigo-600 border border-indigo-400/30 hover:border-transparent text-cyan-100 py-2.5 rounded-xl text-sm font-bold transition-all duration-300"
-                  >
-                    View Details
-                  </Link>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </main>
 
-      {/* ================= FULL WIDTH FOOTER ================= */}
       <footer className="w-full border-t border-indigo-500/20 bg-[#0B1120]/80 backdrop-blur-xl py-8 z-50 relative mt-auto">
         <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-4">
           <div className="text-indigo-300/60 text-sm font-medium">

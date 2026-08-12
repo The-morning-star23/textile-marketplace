@@ -12,6 +12,7 @@ export interface CartItem {
   image: string;
   supplierId: string;
   moq: number;
+  color?: string;
 }
 
 interface CartContextType {
@@ -81,7 +82,9 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
   // Calculate totals
   const cartTotal = cart.reduce((total, item) => total + (item.price * item.quantity), 0);
-  const itemCount = cart.reduce((count, item) => count + item.quantity, 0);
+  
+  // FIX: itemCount is now just the number of unique products in the cart!
+  const itemCount = cart.length;
 
   return (
     <CartContext.Provider value={{ cart, addToCart, removeFromCart, updateQuantity, clearCart, cartTotal, itemCount }}>
