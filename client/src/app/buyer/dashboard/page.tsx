@@ -15,6 +15,13 @@ interface Order {
   supplier: {
     name: string;
   };
+  // --- NEW: Added Color & Image to the Interface ---
+  color?: {
+    name: string;
+    hex: string;
+  };
+  image?: string; 
+  // -----------------------------------------------
   quantity: number;
   totalPrice: number;
   status: string;
@@ -36,7 +43,8 @@ export default function BuyerDashboardHub() {
         const token = auth?.token;
         if (!buyerId || !token) return;
 
-        const res = await fetch(`http://localhost:5000/api/orders/buyer/${buyerId}`, {
+        // FIXED: Using the live environment variable!
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/orders/buyer/${buyerId}`, {
           headers: { "Authorization": `Bearer ${token}` }
         });
 
@@ -142,32 +150,46 @@ export default function BuyerDashboardHub() {
             </div>
           ) : (
             <div className="space-y-4">
-              {activeOrders.slice(0, 3).map(order => (
-                <Link key={order._id} href="/buyer/orders" className="block bg-[#0B1120]/60 backdrop-blur-md border border-indigo-500/20 p-5 rounded-3xl shadow-lg hover:border-cyan-500/40 transition-all group">
-                  <div className="flex items-center gap-5">
-                    <div className="w-16 h-16 bg-slate-900 rounded-xl overflow-hidden shrink-0 border border-indigo-500/30">
-                      {order.product?.images?.[0] ? (
-                        <img src={order.product.images[0]} alt="Product" className="w-full h-full object-cover group-hover:scale-110 transition-transform" />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-[8px] text-indigo-400/50">No Img</div>
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex justify-between items-start mb-1">
-                        <h4 className="font-extrabold text-cyan-50 text-base truncate pr-4">{order.product?.title || "Fabric Order"}</h4>
-                        <span className={`shrink-0 px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider border ${getStatusColor(order.status)}`}>
-                          {order.status}
-                        </span>
+              {activeOrders.slice(0, 3).map(order => {
+                // --- NEW: Smart Image Selection ---
+                const displayImage = order.image || order.product?.images?.[0];
+
+                return (
+                  <Link key={order._id} href="/buyer/orders" className="block bg-[#0B1120]/60 backdrop-blur-md border border-indigo-500/20 p-5 rounded-3xl shadow-lg hover:border-cyan-500/40 transition-all group">
+                    <div className="flex items-center gap-5">
+                      <div className="w-16 h-16 bg-slate-900 rounded-xl overflow-hidden shrink-0 border border-indigo-500/30">
+                        {displayImage ? (
+                          <img src={displayImage} alt="Product" className="w-full h-full object-cover group-hover:scale-110 transition-transform" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-[8px] text-indigo-400/50">No Img</div>
+                        )}
                       </div>
-                      <p className="text-xs text-indigo-300/70 truncate mb-1">Supplier: {order.supplier?.name || "Verified Mill"}</p>
-                      <div className="flex items-center gap-4 text-xs font-medium text-indigo-400">
-                        <span>Qty: {order.quantity}m</span>
-                        <span>Total: ${order.totalPrice.toFixed(2)}</span>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex justify-between items-start mb-1">
+                          <h4 className="font-extrabold text-cyan-50 text-base truncate pr-4">{order.product?.title || "Fabric Order"}</h4>
+                          <span className={`shrink-0 px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider border ${getStatusColor(order.status)}`}>
+                            {order.status}
+                          </span>
+                        </div>
+                        
+                        {/* --- NEW: Display the Ordered Color Swatch --- */}
+                        {order.color ? (
+                          <div className="flex items-center gap-2 mb-1">
+                            <div className="w-3 h-3 rounded-full border border-white/20 shadow-sm" style={{ backgroundColor: order.color.hex }}></div>
+                            <span className="text-xs font-medium text-cyan-200/80">{order.color.name}</span>
+                          </div>
+                        ) : null}
+
+                        <p className="text-xs text-indigo-300/70 truncate mb-1">Supplier: {order.supplier?.name || "Verified Mill"}</p>
+                        <div className="flex items-center gap-4 text-xs font-medium text-indigo-400">
+                          <span>Qty: {order.quantity}m</span>
+                          <span>Total: ${order.totalPrice.toFixed(2)}</span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </Link>
-              ))}
+                  </Link>
+                );
+              })}
             </div>
           )}
         </div>
