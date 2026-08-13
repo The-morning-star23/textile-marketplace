@@ -15,13 +15,8 @@ interface Order {
   supplier: {
     name: string;
   };
-  // --- NEW: Added Color & Image to the Interface ---
-  color?: {
-    name: string;
-    hex: string;
-  };
-  image?: string; 
-  // -----------------------------------------------
+  color?: string; // Fixed: Now a string just like in My Purchases
+  image?: string; // Fixed: Matches My Purchases
   quantity: number;
   totalPrice: number;
   status: string;
@@ -43,7 +38,6 @@ export default function BuyerDashboardHub() {
         const token = auth?.token;
         if (!buyerId || !token) return;
 
-        // FIXED: Using the live environment variable!
         const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/orders/buyer/${buyerId}`, {
           headers: { "Authorization": `Bearer ${token}` }
         });
@@ -151,7 +145,7 @@ export default function BuyerDashboardHub() {
           ) : (
             <div className="space-y-4">
               {activeOrders.slice(0, 3).map(order => {
-                // --- NEW: Smart Image Selection ---
+                // FIXED: Uses exact same image fallback logic as My Purchases
                 const displayImage = order.image || order.product?.images?.[0];
 
                 return (
@@ -172,13 +166,12 @@ export default function BuyerDashboardHub() {
                           </span>
                         </div>
                         
-                        {/* --- NEW: Display the Ordered Color Swatch --- */}
-                        {order.color ? (
-                          <div className="flex items-center gap-2 mb-1">
-                            <div className="w-3 h-3 rounded-full border border-white/20 shadow-sm" style={{ backgroundColor: order.color.hex }}></div>
-                            <span className="text-xs font-medium text-cyan-200/80">{order.color.name}</span>
-                          </div>
-                        ) : null}
+                        {/* FIXED: Uses exact same color logic as My Purchases */}
+                        {order.color && order.color !== "Standard" && (
+                          <p className="text-xs text-amber-400 font-bold mb-1 uppercase tracking-wider">
+                            Color: {order.color}
+                          </p>
+                        )}
 
                         <p className="text-xs text-indigo-300/70 truncate mb-1">Supplier: {order.supplier?.name || "Verified Mill"}</p>
                         <div className="flex items-center gap-4 text-xs font-medium text-indigo-400">
