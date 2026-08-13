@@ -8,18 +8,21 @@ const userSchema = new mongoose.Schema({
   role: { type: String, enum: ['buyer', 'supplier'], required: true },
   isOnboarded: { type: Boolean, default: false },
   preferences: { type: Object, default: {} },
+
+  // BEHAVIORAL AI TRACKING
+  viewedProducts: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Product' }], // Tracks what they click
+  recentSearches: [{ type: String }], // Tracks what they search for
+  topCategories: [{ type: String }], // Dynamically updates based on what they buy/view
   
-  // Required Supplier Fields
   businessName: { type: String, default: "" },
-  businessType: { type: String, default: "" }, // Added
+  businessType: { type: String, default: "" },
   phoneNumber: { type: String, default: "" },
   businessAddress: { type: String, default: "" },
   operatingHours: { type: String, default: "" },
-  productCategories: { type: [String], default: [] }, // Added
-  fabricTypes: { type: [String], default: [] }, // Added
-  moq: { type: String, default: "" }, // Added
+  productCategories: { type: [String], default: [] },
+  fabricTypes: { type: [String], default: [] },
+  moq: { type: String, default: "" },
   
-  // Additional Info
   gstinNumber: { type: String, default: "" },
   website: { type: String, default: "" },
 }, { timestamps: true });

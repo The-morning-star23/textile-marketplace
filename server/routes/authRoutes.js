@@ -31,7 +31,7 @@ router.post('/register', async (req, res) => {
     );
 
     res.status(201).json({ 
-      user: savedUser, // This now safely includes isOnboarded: false for the frontend
+      user: savedUser,
       token: token 
     });
   } catch (error) {
@@ -74,7 +74,6 @@ router.post('/login', async (req, res) => {
 });
 
 // 2. PLUG IN THE ONBOARDING CONTROLLERS
-// These will now correctly process the JSON, talk to Gemini, and save everything to the database!
 router.put('/onboard', saveManualOnboarding);
 router.post('/onboard/ai', processAIOnboarding);
 

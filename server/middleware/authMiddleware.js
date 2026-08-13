@@ -1,6 +1,5 @@
 const jwt = require('jsonwebtoken');
 
-// A fallback secret just for local development (in production, use a .env file!)
 const JWT_SECRET = process.env.JWT_SECRET || 'super_secret_textile_key_123';
 
 const verifyToken = (req, res, next) => {

@@ -1,10 +1,11 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable react-hooks/set-state-in-effect */
-/* eslint-disable @next/next/no-img-element */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import Link from "next/link";
-import { useState, useEffect, useContext } from "react";
+import Image from "next/image"; // 1. Added next/image
+import { useSearchParams } from "next/navigation"; // 2. Added useSearchParams
+import { useState, useEffect, useContext, Suspense } from "react";
 import { AuthContext } from "../../context/AuthContext";
 import { CartContext } from "../../context/CartContext";
 
@@ -17,35 +18,46 @@ interface Product {
   supplier?: {
     name: string;
   };
-  inStock?: boolean; // <--- ADDED: To track the manual toggle
-  availableStock?: number; // <--- ADDED: To track the quantity
+  inStock?: boolean;
+  availableStock?: number;
 }
 
 const CATEGORIES = ["All", "Cotton", "Silk", "Linen", "Polyester", "Wool", "Blend"];
 
-export default function MarketplacePage() {
+// 3. Extracted to handle search params safely within a Suspense boundary
+function MarketplaceContent() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("All");
   
-  // Hydration fix state
+  const searchParams = useSearchParams();
+  // 4. Initialize state directly from URL params if they exist
+  const [searchQuery, setSearchQuery] = useState(searchParams.get("search") || "");
+  const [selectedCategory, setSelectedCategory] = useState(searchParams.get("category") || "All");
+  
   const [isMounted, setIsMounted] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   
   const auth = useContext(AuthContext) as any;
-  const isLoggedIn = auth?.token || (typeof window !== "undefined" && localStorage.getItem("token"));
   const cart = useContext(CartContext) as any;
 
-  // Set isMounted to true once the component has mounted in the browser
+  // 5. Safely check localStorage only on the client to avoid hydration mismatch
   useEffect(() => {
     setIsMounted(true);
-  }, []);
+    const token = auth?.token || localStorage.getItem("token");
+    setIsLoggedIn(!!token);
+  }, [auth?.token]);
 
-  // 1. Fetch Products
+  // Fetch Products
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const res = await fetch("http://localhost:5000/api/products");
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+        
+        const token = auth?.token || localStorage.getItem("token");
+        const headers: Record<string, string> = token ? { "Authorization": `Bearer ${token}` } : {};
+        
+        const res = await fetch(`${apiUrl}/api/products`, { headers }); 
+
         if (res.ok) {
           const data = await res.json();
           setProducts(data);
@@ -57,18 +69,7 @@ export default function MarketplacePage() {
       }
     };
     fetchProducts();
-  }, []);
-
-  // 2. Catch Search Queries from the Landing Page
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const params = new URLSearchParams(window.location.search);
-      const search = params.get("search");
-      const category = params.get("category");
-      if (search) setSearchQuery(search);
-      if (category) setSelectedCategory(category);
-    }
-  }, []);
+  }, [auth?.token]);
 
   const filteredProducts = products.filter((product) => {
     const matchesSearch = 
@@ -123,7 +124,6 @@ export default function MarketplacePage() {
             {isMounted && (
               isLoggedIn ? (
                 <div className="flex items-center gap-4">
-      
                   <Link 
                     href="/buyer/dashboard"
                     className="flex items-center gap-2 px-4 py-2 bg-indigo-900/40 border border-indigo-500/30 rounded-xl text-indigo-200 hover:text-cyan-400 hover:border-cyan-400/50 transition-all group text-sm font-bold"
@@ -142,7 +142,6 @@ export default function MarketplacePage() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
                     </svg>
                     Cart
-
                     {(cart?.itemCount ?? 0) > 0 && (
                       <span className="absolute -top-2 -right-2 flex h-5 w-5">
                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
@@ -153,15 +152,18 @@ export default function MarketplacePage() {
                     )}
                   </Link>
 
-                <button 
-                  onClick={() => auth?.logout?.()}
-                  className="cursor-pointer flex items-center gap-2 px-4 py-2 bg-red-900/10 border border-red-500/20 rounded-xl text-red-400 hover:text-red-300 hover:bg-red-500/20 hover:border-red-400/50 transition-all group text-sm font-bold"
-                >
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                  </svg>
-                  Log out
-                </button>
+                  <button 
+                    onClick={() => {
+                        auth?.logout?.();
+                        setIsLoggedIn(false);
+                    }}
+                    className="cursor-pointer flex items-center gap-2 px-4 py-2 bg-red-900/10 border border-red-500/20 rounded-xl text-red-400 hover:text-red-300 hover:bg-red-500/20 hover:border-red-400/50 transition-all group text-sm font-bold"
+                  >
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    </svg>
+                    Log out
+                  </button>
                 </div>
               ) : (
                 <>
@@ -216,22 +218,27 @@ export default function MarketplacePage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {filteredProducts.map((product) => {
-              // --- SMART STOCK CHECK: Honors the supplier's manual toggle AND the stock count ---
               const isOutOfStock = product.inStock === false || product.availableStock === 0;
 
               return (
-                <div key={product._id} className={`bg-indigo-950/30 backdrop-blur-xl border border-indigo-500/20 rounded-3xl overflow-hidden transition-all duration-500 group flex flex-col ${isOutOfStock ? 'opacity-80 grayscale-20' : 'hover:border-cyan-400/50 hover:shadow-[0_0_40px_rgba(34,211,238,0.15)] hover:-translate-y-2'}`}>
+                <div key={product._id} className={`bg-indigo-950/30 backdrop-blur-xl border border-indigo-500/20 rounded-3xl overflow-hidden transition-all duration-500 group flex flex-col ${isOutOfStock ? 'opacity-80 grayscale' : 'hover:border-cyan-400/50 hover:shadow-[0_0_40px_rgba(34,211,238,0.15)] hover:-translate-y-2'}`}>
                   <div className="h-48 bg-slate-800 overflow-hidden relative">
                     
-                    {/* OUT OF STOCK OVERLAY */}
                     {isOutOfStock && (
                       <div className="absolute inset-0 bg-[#0B1120]/60 z-20 flex items-center justify-center backdrop-blur-[2px]">
                         <span className="bg-red-500 text-white font-extrabold px-4 py-1.5 rounded-lg uppercase tracking-widest text-sm shadow-lg shadow-red-500/30">Out of Stock</span>
                       </div>
                     )}
 
+                    {/* 7. Replaced standard <img> with Next.js <Image /> component */}
                     {product.images && product.images.length > 0 ? (
-                      <img src={product.images[0]} alt={product.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 opacity-90 group-hover:opacity-100" />
+                      <Image 
+                        src={product.images[0]} 
+                        alt={product.title}
+                        fill
+                        className="object-cover group-hover:scale-110 transition-transform duration-700 opacity-90 group-hover:opacity-100" 
+                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 33vw, 25vw"
+                      />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-indigo-400 text-xs font-bold tracking-widest uppercase bg-indigo-950">
                         [ No Image ]
@@ -273,5 +280,18 @@ export default function MarketplacePage() {
         </div>
       </footer>
     </div>
+  );
+}
+
+// 8. Wrap inside Suspense because useSearchParams() de-opts static rendering if not isolated
+export default function MarketplacePage() {
+  return (
+    <Suspense fallback={
+        <div className="min-h-screen bg-slate-900 flex justify-center items-center">
+            <div className="w-6 h-6 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin"></div>
+        </div>
+    }>
+      <MarketplaceContent />
+    </Suspense>
   );
 }

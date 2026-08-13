@@ -32,7 +32,7 @@ interface Product {
   };
   moq?: number;
   availableStock: number;
-  inStock?: boolean; // <--- ADDED: To catch the manual override flag
+  inStock?: boolean;
 }
 
 export default function ProductDetailsPage() {

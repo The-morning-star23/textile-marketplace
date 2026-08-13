@@ -66,7 +66,6 @@ export default function EditProductPage() {
             setExistingMainImage(mainImgUrl);
           }
 
-          // SMART MIGRATION: Convert old text colors and AUTO-ASSIGN the main image!
           if (product.availableColors && product.availableColors.length > 0) {
             const loadedColors = product.availableColors.map((c: any, index: number) => {
               

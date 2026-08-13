@@ -35,7 +35,6 @@ export default function LoginPage() {
 
       // Log the user in via AuthContext
       if (auth?.login) {
-        // FIX: Swapped arguments to match Context (User Object FIRST, Token String SECOND)
         auth.login(data.user, data.token);
       } else {
         localStorage.setItem("token", data.token);
@@ -59,7 +58,6 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-[#080C17] flex items-center justify-center font-sans relative selection:bg-cyan-500/30 selection:text-cyan-100 p-6">
       
-      {/* Background Glows (Matching Register Page) */}
       <div className="absolute top-[-10%] right-[-10%] w-[50vw] h-[50vw] bg-violet-600/15 rounded-full blur-[120px] mix-blend-screen pointer-events-none"></div>
       <div className="absolute bottom-[20%] left-[-10%] w-[40vw] h-[40vw] bg-cyan-600/10 rounded-full blur-[100px] mix-blend-screen pointer-events-none"></div>
 

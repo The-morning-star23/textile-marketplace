@@ -86,7 +86,6 @@ export default function AIAssistant() {
   return (
     <div className="fixed bottom-6 right-6 z-50 font-sans">
       
-      {/* The Floating Chat Window (Updated for Dark Mode) */}
       {isOpen && (
         <div className="mb-4 w-[90vw] sm:w-96 bg-[#0B1120]/95 backdrop-blur-2xl border border-indigo-500/30 rounded-3xl shadow-[0_10px_40px_rgba(0,0,0,0.8)] flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-5 duration-300">
           

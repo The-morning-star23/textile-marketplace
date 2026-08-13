@@ -122,7 +122,7 @@ export default function BuyerOrders() {
         </Link>
       </header>
 
-      {/* --- ENHANCED SEARCH & FILTER TOOLBAR --- */}
+      {/* --- SEARCH & FILTER TOOLBAR --- */}
       <div className="mb-10 flex flex-col md:flex-row gap-4 items-start md:items-center">
         
         {/* Instant Search Bar */}
@@ -137,7 +137,6 @@ export default function BuyerOrders() {
             placeholder="Search products, suppliers, or Order IDs..."
             className="w-full bg-[#0B1120]/60 backdrop-blur-md border border-indigo-500/30 text-cyan-50 rounded-xl pl-12 pr-12 py-3 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all placeholder:text-indigo-400/50 shadow-xl"
           />
-          {/* Clear Search Button (Shows only when typing) */}
           {searchQuery && (
             <button 
               onClick={() => setSearchQuery("")}

@@ -12,7 +12,7 @@ interface Product {
   fabricType: string;
   price: number;
   moq: number;
-  availableStock: number; // Added to track exact quantity
+  availableStock: number;
   images: string[];
   inStock?: boolean; 
 }
@@ -70,7 +70,6 @@ export default function SupplierProducts() {
   // TOGGLE IN-STOCK LOGIC
   const handleToggleStock = async (id: string, currentStatus: boolean) => {
     try {
-      // Optimistic UI update for instant feedback
       setProducts(products.map(p => p._id === id ? { ...p, inStock: !currentStatus } : p));
 
       const res = await fetch(`http://localhost:5000/api/products/${id}`, {

@@ -16,7 +16,6 @@ const processAIOnboarding = async (req, res) => {
 
     const isSupplier = user.role === "supplier";
 
-    // Notice we added "contactEmail" to the AI's required keys list here!
     const prompt = isSupplier 
       ? `You are a strict data extractor. Extract business details from the text into JSON.
          Keys MUST be exactly: "businessName", "businessType", "contactEmail", "phoneNumber", "businessAddress", "operatingHours", "productCategories" (array of strings), "fabricTypes" (array of strings), "moq", "gstinNumber", "website".
@@ -46,7 +45,6 @@ const processAIOnboarding = async (req, res) => {
       updateData.businessName = extractedData.businessName || "";
       updateData.businessType = extractedData.businessType || "";
       
-      // FIX: Using extractedData instead of data for the AI function
       if (extractedData.contactEmail) {
         updateData.email = extractedData.contactEmail; 
       }
@@ -94,7 +92,6 @@ const saveManualOnboarding = async (req, res) => {
       updateData.businessName = data.businessName || data.preferences?.businessName || "";
       updateData.businessType = data.businessType || data.preferences?.businessType || "";
       
-      // FIX: Grabbing the email safely from the manual form payload
       if (data.contactEmail || data.preferences?.contactEmail) {
         updateData.email = data.contactEmail || data.preferences?.contactEmail;
       }

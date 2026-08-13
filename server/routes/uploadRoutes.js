@@ -1,6 +1,6 @@
 const express = require('express');
 const { upload } = require('../middleware/uploadMiddleware');
-const { verifyToken } = require('../middleware/authMiddleware'); // We still want to protect this!
+const { verifyToken } = require('../middleware/authMiddleware');
 const router = express.Router();
 
 // The "upload.single('image')" middleware intercepts the file and sends it to Cloudinary

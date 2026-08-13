@@ -48,7 +48,6 @@ export default function BuyerCart() {
     }
   };
 
-  // Mock standard shipping rules for B2B wholesale
   const shippingCost = cartTotal > 5000 ? 0 : cartTotal > 0 ? 150 : 0;
   const finalTotal = cartTotal + shippingCost;
 

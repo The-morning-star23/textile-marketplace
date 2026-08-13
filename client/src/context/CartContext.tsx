@@ -83,7 +83,6 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   // Calculate totals
   const cartTotal = cart.reduce((total, item) => total + (item.price * item.quantity), 0);
   
-  // FIX: itemCount is now just the number of unique products in the cart!
   const itemCount = cart.length;
 
   return (

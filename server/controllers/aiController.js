@@ -48,8 +48,6 @@ const generateAIResponse = async (req, res) => {
       parts: [{ text: msg.text }]
     }));
 
-    // FIX: Gemini strictly requires history to start with a 'user' message.
-    // We must remove any leading 'model' messages (like the initial frontend greeting).
     while (formattedHistory.length > 0 && formattedHistory[0].role === "model") {
       formattedHistory.shift();
     }

@@ -29,7 +29,7 @@ router.post('/', verifyToken, async (req, res) => {
         quantity: item.quantity,
         totalPrice: item.price * item.quantity, // Calculate item subtotal
         shippingAddress: shippingAddress,
-        status: 'Pending' // Matching our new Title Case schema
+        status: 'Pending'
       });
       
       const savedOrder = await newOrder.save();

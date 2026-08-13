@@ -13,7 +13,7 @@ interface Message {
 interface SupplierProfile {
   businessName: string;
   businessType: string;
-  contactEmail: string; // <-- Contact Email is here!
+  contactEmail: string;
   phoneNumber: string;
   businessAddress: string;
   operatingHours: string;
@@ -46,7 +46,7 @@ export default function SupplierOnboarding() {
   const [profile, setProfile] = useState<SupplierProfile>({
     businessName: "",
     businessType: "",
-    contactEmail: "", // <-- Initialized here
+    contactEmail: "",
     phoneNumber: "",
     businessAddress: "",
     operatingHours: "",
@@ -328,7 +328,7 @@ export default function SupplierOnboarding() {
                   </div>
                 </div>
 
-                {/* MANUAL FORM: CONTACT EMAIL IS RIGHT HERE! */}
+                {/* MANUAL FORM */}
                 <div className="grid grid-cols-2 gap-5">
                   <div>
                     <label className="text-xs font-bold text-indigo-300 uppercase tracking-wider mb-1 block">Contact Email</label>
@@ -407,7 +407,7 @@ export default function SupplierOnboarding() {
                 </div>
 
                 <div className="grid grid-cols-2 gap-6">
-                  {/* LIVE PROFILE: CONTACT EMAIL IS RIGHT HERE! */}
+                  {/* LIVE PROFILE */}
                   <div>
                     <label className="text-xs font-bold text-indigo-400/70 uppercase tracking-widest block mb-1">Contact Email</label>
                     <div className={`text-sm font-bold ${profile.contactEmail ? 'text-cyan-50' : 'text-indigo-300/30'}`}>
