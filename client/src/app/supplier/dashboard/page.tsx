@@ -24,21 +24,25 @@ export default function SupplierDashboard() {
       if (!supplierId || !token) return; 
       
       try {
+        // --- FIXED: Uses the live backend environment variable ---
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+
         // Fetch Products
-        const prodRes = await fetch(`http://localhost:5000/api/products/supplier/${supplierId}`);
+        const prodRes = await fetch(`${apiUrl}/api/products/supplier/${supplierId}`);
         if (prodRes.ok) {
           const prodData = await prodRes.json();
           setProducts(prodData);
         }
 
         // Fetch Orders
-        const ordRes = await fetch(`http://localhost:5000/api/orders/supplier/${supplierId}`, {
+        const ordRes = await fetch(`${apiUrl}/api/orders/supplier/${supplierId}`, {
           headers: { "Authorization": `Bearer ${token}` }
         });
         if (ordRes.ok) {
           const ordData = await ordRes.json();
           setOrders(ordData);
         }
+        // ---------------------------------------------------------
 
       } catch (error) {
         console.error("Failed to fetch dashboard data:", error);

@@ -38,7 +38,7 @@ export default function SupplierOrders() {
         const token = auth?.token;
         if (!supplierId || !token) return;
 
-        const res = await fetch(`http://localhost:5000/api/orders/supplier/${supplierId}`, {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/orders/supplier/${supplierId}`, {
           headers: { "Authorization": `Bearer ${token}` }
         });
 
@@ -61,7 +61,7 @@ export default function SupplierOrders() {
   const handleStatusChange = async (orderId: string, newStatus: string) => {
     try {
       setUpdatingId(orderId);
-      const res = await fetch(`http://localhost:5000/api/orders/${orderId}/status`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/orders/${orderId}/status`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",

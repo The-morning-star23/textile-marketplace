@@ -44,7 +44,7 @@ export default function EditProductPage() {
   useEffect(() => {
     const fetchProduct = async () => {
       try {
-        const res = await fetch(`http://localhost:5000/api/products/${productId}`);
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/products/${productId}`);
         if (res.ok) {
           const product = await res.json();
           
@@ -165,7 +165,7 @@ export default function EditProductPage() {
 
       const finalColors = processedColors.filter(c => c.name.trim() !== "");
 
-      const res = await fetch(`http://localhost:5000/api/products/${productId}`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/products/${productId}`, {
         method: "PUT",
         headers: { 
           "Content-Type": "application/json",

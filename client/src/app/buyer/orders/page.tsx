@@ -41,7 +41,7 @@ export default function BuyerOrders() {
         const token = auth?.token;
         if (!buyerId || !token) return;
 
-        const res = await fetch(`http://localhost:5000/api/orders/buyer/${buyerId}`, {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/orders/buyer/${buyerId}`, {
           headers: { "Authorization": `Bearer ${token}` }
         });
 

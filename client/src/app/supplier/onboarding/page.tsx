@@ -118,7 +118,7 @@ export default function SupplierOnboarding() {
         throw new Error("Authentication missing.");
       }
 
-      const res = await fetch(`http://localhost:5000/api/auth/onboard/ai`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/onboard/ai`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -173,7 +173,7 @@ export default function SupplierOnboarding() {
         return;
       }
 
-      const res = await fetch(`http://localhost:5000/api/auth/onboard`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/onboard`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

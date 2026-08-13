@@ -66,7 +66,7 @@ export default function ProductDetailsPage() {
   useEffect(() => {
     const fetchProduct = async () => {
       try {
-        const res = await fetch(`http://localhost:5000/api/products/${productId}`);
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/products/${productId}`);
         if (!res.ok) throw new Error("Failed to load product.");
         const data = await res.json();
         
