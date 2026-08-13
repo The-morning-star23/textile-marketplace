@@ -51,7 +51,7 @@ function MarketplaceContent() {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_API_URL + "";
         
         const token = auth?.token || localStorage.getItem("token");
         const headers: Record<string, string> = token ? { "Authorization": `Bearer ${token}` } : {};

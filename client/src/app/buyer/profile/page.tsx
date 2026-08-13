@@ -52,7 +52,7 @@ export default function BuyerProfile() {
     setSuccessMessage("");
     
     try {
-      const res = await fetch("http://localhost:5000/api/auth/onboard", {
+      const res = await fetch(process.env.NEXT_PUBLIC_API_URL + "/api/auth/onboard", {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

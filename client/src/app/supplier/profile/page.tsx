@@ -29,7 +29,7 @@ export default function SupplierProfilePage() {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const res = await fetch("http://localhost:5000/api/supplier/profile", {
+        const res = await fetch(process.env.NEXT_PUBLIC_API_URL + "/api/supplier/profile", {
           headers: { "Authorization": `Bearer ${actualToken}` },
         });
         if (res.ok) {
@@ -71,7 +71,7 @@ export default function SupplierProfilePage() {
     setSuccessMessage("");
 
     try {
-      const res = await fetch("http://localhost:5000/api/supplier/profile", {
+      const res = await fetch(process.env.NEXT_PUBLIC_API_URL + "/api/supplier/profile", {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

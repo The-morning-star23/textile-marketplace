@@ -38,7 +38,7 @@ export default function Home() {
   useEffect(() => {
     const fetchFeatured = async () => {
       try {
-        const res = await fetch("http://localhost:5000/api/products");
+        const res = await fetch(process.env.NEXT_PUBLIC_API_URL + "/api/products");
         if (res.ok) {
           const data = await res.json();
           setFeaturedProducts(data.slice(0, 4)); // Only show 4 featured products on landing page

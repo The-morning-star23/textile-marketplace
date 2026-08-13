@@ -60,7 +60,7 @@ export default function CheckoutPage() {
         // We format the address into a single string for the database
         const fullAddress = `${shippingInfo.address}, ${shippingInfo.city}, ${shippingInfo.state} ${shippingInfo.zipCode}, ${shippingInfo.country}`;
         
-        const response = await fetch("http://localhost:5000/api/orders", {
+        const response = await fetch(process.env.NEXT_PUBLIC_API_URL + "/api/orders", {
           method: "POST",
           headers: { 
             "Content-Type": "application/json", 
