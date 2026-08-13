@@ -95,8 +95,8 @@ Follow these instructions to set up the project locally on your machine.
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/yourusername/threadmarket.git
-cd threadmarket
+git clone https://github.com/The-morning-star23/textile-marketplace.git
+cd textile-marketplace
 ```
 
 ### 2. Backend Setup
